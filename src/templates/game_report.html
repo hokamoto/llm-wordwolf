@@ -1,0 +1,651 @@
+{#- Helper macros -#}
+{% macro model_short(model_id) -%}
+  {%- if model_id -%}
+    {{ model_id.split("/")[-1] if "/" in model_id else model_id }}
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro paragraphs(text) -%}
+  {%- set ns = namespace(has_content=false) -%}
+  {%- for line in (text or "").splitlines() if line.strip() -%}
+    {%- set ns.has_content = true -%}
+<p>{{ line }}</p>
+  {%- endfor -%}
+  {%- if not ns.has_content -%}<p></p>{%- endif -%}
+{%- endmacro %}
+
+{% macro speaker_tag(name) -%}
+  {%- set role = player_roles.get(name) -%}
+  {%- set word = player_words.get(name, "") -%}
+  {%- if role == "wolf" -%}
+    <span class="speaker-tag wolf-tag"> (Wolf &middot; {{ word }})</span>
+  {%- else -%}
+    <span class="speaker-tag"> ({{ word }})</span>
+  {%- endif -%}
+{%- endmacro %}
+
+{% set ROLE_ICON = {"wolf": "\U0001f43a", "citizen": "\U0001f464"} %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Word Wolf Transcript</title>
+  <style>
+    :root {
+      --bg: #f4efe7;
+      --paper: #fffdf9;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --line: #ddd2c2;
+      --shadow: 0 18px 40px rgba(74, 56, 35, 0.12);
+      --player-1: #c96c4c;
+      --player-2: #2f7a72;
+      --player-3: #4b5d9a;
+      --player-4: #8a5fbf;
+      --player-5: #b54747;
+      --player-6: #8b6f47;
+      --player-7: #2f6d9a;
+      --player-8: #3e8b57;
+      --player-9: #b05c8f;
+      --player-10: #6a4fb3;
+      --thinking-bg: #f7f3ec;
+      --thinking-ink: #7b7f89;
+      --hero: linear-gradient(135deg, #efe2cf 0%, #f9f5ef 55%, #e6efe7 100%);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(201, 108, 76, 0.12), transparent 28%),
+        radial-gradient(circle at top right, rgba(47, 122, 114, 0.1), transparent 22%),
+        linear-gradient(180deg, #f8f3eb 0%, var(--bg) 100%);
+      line-height: 1.7;
+    }
+
+    .page {
+      width: min(1100px, calc(100% - 32px));
+      margin: 24px auto 56px;
+    }
+
+    .hero,
+    .section,
+    .vote-card,
+    .resolution {
+      background: var(--paper);
+      border: 1px solid rgba(221, 210, 194, 0.9);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      padding: 28px;
+      background: var(--hero);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -70px auto;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.45);
+      filter: blur(8px);
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8a684f;
+    }
+
+    h1, h2, h3, h4, p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(1.9rem, 4vw, 3.2rem);
+      line-height: 1.1;
+      margin-bottom: 14px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .summary-item {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 253, 249, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(4px);
+    }
+
+    .summary-item strong,
+    .summary-item span {
+      display: block;
+    }
+
+    .summary-item strong {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .summary-item span {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .roles {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip {
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+
+    .chip-name {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .chip-model {
+      font-size: 0.72rem;
+      font-weight: 500;
+      opacity: 0.6;
+      padding-left: 2px;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .chip.wolf {
+      background: rgba(180, 60, 60, 0.12);
+      border: 2px solid rgba(180, 60, 60, 0.45);
+      box-shadow: 0 0 0 3px rgba(180, 60, 60, 0.07);
+    }
+
+    .chip.citizen {
+      background: rgba(47, 122, 114, 0.10);
+      border: 2px solid rgba(47, 122, 114, 0.35);
+    }
+
+    .player-1 { color: var(--player-1); }
+    .player-2 { color: var(--player-2); }
+    .player-3 { color: var(--player-3); }
+    .player-4 { color: var(--player-4); }
+    .player-5 { color: var(--player-5); }
+    .player-6 { color: var(--player-6); }
+    .player-7 { color: var(--player-7); }
+    .player-8 { color: var(--player-8); }
+    .player-9 { color: var(--player-9); }
+    .player-10 { color: var(--player-10); }
+
+    .section {
+      margin-top: 24px;
+      padding: 22px;
+    }
+
+    .thinking-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .toggle-button,
+    .thinking-control {
+      appearance: none;
+      border: 1px solid #d9ccb8;
+      background: #fffaf3;
+      color: #6f5843;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font: inherit;
+      font-size: 0.92rem;
+      font-weight: 700;
+      line-height: 1.2;
+      cursor: pointer;
+      transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+    }
+
+    .toggle-button:hover,
+    .thinking-control:hover {
+      background: #f3e7d7;
+      border-color: #cbb69c;
+    }
+
+    .toggle-button:focus-visible,
+    .thinking-control:focus-visible {
+      outline: 3px solid rgba(126, 164, 141, 0.28);
+      outline-offset: 2px;
+    }
+
+    .section-title {
+      margin-bottom: 0;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-title::before {
+      content: "";
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #d4a373, #7ea48d);
+      flex: 0 0 auto;
+    }
+
+    .turn {
+      display: grid;
+      grid-template-columns: 138px minmax(0, 1fr);
+      gap: 16px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .turn:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .speaker {
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      padding-top: 6px;
+      padding-right: 12px;
+    }
+
+    .speaker-tag {
+      font-size: 0.78rem;
+      font-weight: 600;
+      opacity: 0.75;
+    }
+
+    .speaker-tag.wolf-tag {
+      color: #b43c3c;
+      opacity: 0.9;
+    }
+
+    .content {
+      display: grid;
+      gap: 10px;
+    }
+
+    .thinking {
+      padding: 13px 15px;
+      background: var(--thinking-bg);
+      border: 1px dashed #d8cfbf;
+      border-radius: 16px;
+      color: var(--thinking-ink);
+      font-size: 0.92rem;
+      line-height: 1.65;
+    }
+
+    .thinking.is-hidden {
+      display: none;
+    }
+
+    .thinking-toggle-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+
+    .toggle-button {
+      padding: 7px 12px;
+      font-size: 0.84rem;
+      color: var(--thinking-ink);
+      background: #f8f2e9;
+    }
+
+    .thinking strong {
+      display: inline-block;
+      margin-right: 8px;
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #9aa0aa;
+    }
+
+    .speech {
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid #e7ddcf;
+      font-size: 1rem;
+    }
+
+    .speech p + p,
+    .thinking p + p {
+      margin-top: 0.75em;
+    }
+
+    .lessons-learned {
+      padding: 13px 15px;
+      background: #eef4f0;
+      border: 1px solid #b9d4c4;
+      border-radius: 16px;
+      font-size: 0.95rem;
+      line-height: 1.65;
+    }
+
+    .lessons-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #4a8a6a;
+    }
+
+    .vote-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .vote-card {
+      padding: 18px;
+    }
+
+    .vote-card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 12px;
+    }
+
+    .vote {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      font-weight: 700;
+    }
+
+    .meta {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .tally {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: #faf6f0;
+      border: 1px solid #e9decd;
+    }
+
+    .resolution {
+      margin-top: 24px;
+      padding: 24px;
+      text-align: center;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.94), rgba(249, 242, 233, 0.98));
+    }
+
+    .resolution p + p {
+      margin-top: 10px;
+    }
+
+    .result {
+      font-size: clamp(1.45rem, 3vw, 2.1rem);
+      font-weight: 800;
+    }
+
+    .note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 900px) {
+      .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        width: min(100% - 20px, 1000px);
+        margin: 10px auto 28px;
+      }
+
+      .hero,
+      .section,
+      .vote-card,
+      .resolution {
+        border-radius: 20px;
+      }
+
+      .hero,
+      .section,
+      .resolution {
+        padding: 18px;
+      }
+
+      .turn {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .section-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .speaker {
+        padding-top: 0;
+      }
+    }
+
+    @media (max-width: 560px) {
+      body {
+        font-size: 15px;
+      }
+
+      .summary {
+        grid-template-columns: 1fr;
+      }
+
+      .speech,
+      .thinking,
+      .tally {
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <p class="eyebrow">Word Wolf / Transcript</p>
+      <div class="summary">
+{% if shared_model %}
+        <div class="summary-item">
+          <strong>Model</strong>
+          <span title="{{ shared_model }}">{{ model_short(shared_model) }}</span>
+        </div>
+{% endif %}
+        <div class="summary-item">
+          <strong>Citizen Word</strong>
+          <span>{{ record.citizen_word }}</span>
+        </div>
+        <div class="summary-item">
+          <strong>Wolf Team Word</strong>
+          <span>{{ record.wolf_word }}</span>
+        </div>
+        <div class="summary-item">
+          <strong>Wolves</strong>
+          <span>{{ record.wolf_count }}</span>
+        </div>
+        <div class="summary-item">
+          <strong>Rounds</strong>
+          <span>{{ record.rounds }}</span>
+        </div>
+      </div>
+      <div class="roles">
+{% for player in record.players %}
+        <span class="chip {{ player.role }} {{ player_classes.get(player.name, '') }}">
+          <span class="chip-name">{{ ROLE_ICON.get(player.role, "") }} {{ player.name }}</span>
+{%- if show_model_in_chip and player.model %}
+          <span class="chip-model" title="{{ player.model }}">{{ model_short(player.model) }}</span>
+{%- endif %}
+        </span>
+{% endfor %}
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2 class="section-title">Discussion</h2>
+        <div class="thinking-controls" aria-label="Thinking controls">
+          <button class="thinking-control" type="button" data-action="show-all-thinking">Show all Thinking</button>
+          <button class="thinking-control" type="button" data-action="hide-all-thinking">Hide all Thinking</button>
+        </div>
+      </div>
+{% for turn in record.discussion %}
+      <article class="turn">
+        <div class="speaker {{ player_classes.get(turn.speaker, '') }}">{{ turn.speaker }}{{ speaker_tag(turn.speaker) }}</div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>{{ turn.thinking|default("", true) }}</div>
+          <div class="speech">{{ paragraphs(turn.statement) }}</div>
+        </div>
+      </article>
+{% endfor %}
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Voting Phase</h2>
+      <div class="vote-grid">
+{% for vote in record.votes %}
+        <article class="vote-card">
+          <h3 class="{{ player_classes.get(vote.voter, '') }}">{{ vote.voter }}{{ speaker_tag(vote.voter) }}</h3>
+          <div class="thinking"><strong>Thinking</strong>{{ vote.thinking|default("", true) }}</div>
+          <p class="vote">Voted for: {{ vote.vote_target }}{{ " (Wolf)" if player_roles[vote.vote_target] == "wolf" else "" }}</p>
+        </article>
+{% endfor %}
+      </div>
+
+      <div class="tally">
+        <strong>Vote Tally</strong>
+{% for name, count in sorted_tally %}
+        <p>{{ name }}: {{ count }} vote(s)</p>
+{% endfor %}
+      </div>
+    </section>
+
+    <section class="resolution">
+      <p class="eyebrow">Resolution</p>
+      <p class="result">{{ record.resolution.summary if record.resolution else "" }}</p>
+{% if record.resolution %}
+      <p>{{ record.resolution.eliminated_name }}'s role: <strong>{{ record.resolution.eliminated_role|upper }}</strong></p>
+{% endif %}
+{% if record.resolution and record.resolution.wolf_guess is not none %}
+      <p>Eliminated wolf guess: <strong>{{ record.resolution.wolf_guess }}</strong></p>
+      <p>Citizen word: <strong>{{ record.citizen_word }}</strong></p>
+{% endif %}
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Post-Game Reflections</h2>
+{% for r in record.reflections %}
+      <article class="turn">
+        <div class="speaker {{ player_classes.get(r.player_name, '') }}">{{ r.player_name }}{{ speaker_tag(r.player_name) }}</div>
+        <div class="content">
+          <div class="speech">{{ paragraphs(r.reflection) }}</div>
+          {% if r.lessons_learned %}<div class="lessons-learned"><strong class="lessons-label">Lessons Learned</strong>{{ paragraphs(r.lessons_learned) }}</div>{% endif %}
+        </div>
+      </article>
+{% endfor %}
+    </section>
+  </main>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var thinkingNodes = Array.prototype.slice.call(document.querySelectorAll(".thinking"));
+
+      thinkingNodes.forEach(function (thinking, index) {
+        var thinkingId = "thinking-part-" + (index + 1);
+        thinking.id = thinkingId;
+
+        var row = document.createElement("div");
+        row.className = "thinking-toggle-row";
+
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "toggle-button";
+        button.setAttribute("aria-controls", thinkingId);
+        button.setAttribute("aria-expanded", "true");
+        button.textContent = "Hide Thinking";
+
+        button.addEventListener("click", function () {
+          var isHidden = thinking.classList.toggle("is-hidden");
+          button.setAttribute("aria-expanded", String(!isHidden));
+          button.textContent = isHidden ? "Show Thinking" : "Hide Thinking";
+        });
+
+        thinking.parentNode.insertBefore(row, thinking);
+        row.appendChild(button);
+      });
+
+      function setAllThinking(hidden) {
+        thinkingNodes.forEach(function (thinking) {
+          thinking.classList.toggle("is-hidden", hidden);
+          var button = thinking.parentNode.querySelector(".toggle-button[aria-controls='" + thinking.id + "']");
+          if (button) {
+            button.setAttribute("aria-expanded", String(!hidden));
+            button.textContent = hidden ? "Show Thinking" : "Hide Thinking";
+          }
+        });
+      }
+
+      document.querySelectorAll('[data-action="show-all-thinking"]').forEach(function (btn) {
+        btn.addEventListener("click", function () { setAllThinking(false); });
+      });
+
+      document.querySelectorAll('[data-action="hide-all-thinking"]').forEach(function (btn) {
+        btn.addEventListener("click", function () { setAllThinking(true); });
+      });
+    });
+  </script>
+</body>
+</html>

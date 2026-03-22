@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Word Wolf</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% if page == "auth" %}
+  <main class="container">
+    <div class="setup-card">
+      <h1>Word Wolf</h1>
+      <p class="subtitle">Enter the access code to continue</p>
+      {% if error %}
+        <p style="color:#b54747;font-weight:700;text-align:center">{{ error }}</p>
+      {% endif %}
+      <form action="/auth" method="POST" class="setup-form">
+        <div class="form-group">
+          <label for="code">Access Code</label>
+          <input type="text" id="code" name="code" maxlength="6" autocomplete="off"
+                 style="text-align:center;letter-spacing:0.3em;font-size:1.5rem;text-transform:uppercase"
+                 placeholder="XXXXXX" autofocus required>
+        </div>
+        <button type="submit" class="btn-start">Enter</button>
+      </form>
+    </div>
+  </main>
+
+{% elif page == "setup" %}
+  <main class="container">
+    <div class="setup-card">
+      <h1>Word Wolf</h1>
+      <p class="subtitle" data-i18n="subtitle">LLM Multi-Agent Discussion Game</p>
+      <form action="/start" method="POST" class="setup-form">
+
+        <div class="form-group">
+          <label data-i18n="languageLabel">Language</label>
+          <select id="language" name="language" onchange="updateLanguage(this.value)">
+            <option value="">English</option>
+            <option value="japanese">日本語</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label data-i18n="modeLabel">Mode</label>
+          <div class="mode-selector">
+            <label class="mode-option">
+              <input type="radio" name="mode" value="human" checked>
+              <span class="mode-label" data-i18n="joinPlayer">Join as Player</span>
+            </label>
+            <label class="mode-option">
+              <input type="radio" name="mode" value="spectator">
+              <span class="mode-label" data-i18n="watchAI">Watch AI Play</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="num_players" data-i18n="playersLabel">Players</label>
+            <input type="range" id="num_players" name="num_players" min="3" max="10" value="4">
+            <span class="range-value" id="num_players_val">4</span>
+          </div>
+          <div class="form-group">
+            <label for="num_wolves" data-i18n="wolvesLabel">Wolves</label>
+            <input type="range" id="num_wolves" name="num_wolves" min="1" max="2" value="1">
+            <span class="range-value" id="num_wolves_val">1</span>
+          </div>
+          <div class="form-group">
+            <label for="num_rounds" data-i18n="roundsLabel">Rounds</label>
+            <input type="range" id="num_rounds" name="num_rounds" min="1" max="5" value="2">
+            <span class="range-value" id="num_rounds_val">2</span>
+          </div>
+        </div>
+
+        <div class="form-group spectator-only" style="display:none">
+          <label class="checkbox-label">
+            <input type="checkbox" name="show_thinking" checked>
+            <span data-i18n="showThinking">Show AI thinking</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" name="run_reflection">
+            <span data-i18n="enableReflection">Enable post-game reflection</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn-start" data-i18n="startGame">Start Game</button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    var SETUP_T = {
+      en: {
+        subtitle: "LLM Multi-Agent Discussion Game",
+        modeLabel: "Mode",
+        watchAI: "Watch AI Play",
+        joinPlayer: "Join as Player",
+        playersLabel: "Players",
+        wolvesLabel: "Wolves",
+        roundsLabel: "Rounds",
+        languageLabel: "Language",
+        showThinking: "Show AI thinking",
+        enableReflection: "Enable post-game reflection",
+        startGame: "Start Game"
+      },
+      ja: {
+        subtitle: "LLM マルチエージェント議論ゲーム",
+        modeLabel: "モード",
+        watchAI: "AIの対戦を観戦",
+        joinPlayer: "プレイヤーとして参加",
+        playersLabel: "プレイヤー数",
+        wolvesLabel: "ウルフ数",
+        roundsLabel: "ラウンド数",
+        languageLabel: "言語",
+        showThinking: "AIの思考を表示",
+        enableReflection: "ゲーム後の振り返りを有効にする",
+        startGame: "ゲームを開始"
+      }
+    };
+
+    function getLang(langValue) {
+      return langValue === "japanese" ? "ja" : "en";
+    }
+
+    function updateLanguage(langValue) {
+      var lang = getLang(langValue);
+      document.querySelectorAll("[data-i18n]").forEach(function(el) {
+        var key = el.getAttribute("data-i18n");
+        if (SETUP_T[lang] && SETUP_T[lang][key]) {
+          el.textContent = SETUP_T[lang][key];
+        }
+      });
+    }
+
+    function updateWolvesMax(numPlayers) {
+      var wolfSlider = document.getElementById("num_wolves");
+      var max = Math.max(1, Math.floor((numPlayers - 1) / 2));
+      wolfSlider.max = max;
+      if (parseInt(wolfSlider.value) > max) {
+        wolfSlider.value = max;
+      }
+      document.getElementById("num_wolves_val").textContent = wolfSlider.value;
+    }
+
+    document.getElementById("num_players").addEventListener("input", function() {
+      document.getElementById("num_players_val").textContent = this.value;
+      updateWolvesMax(parseInt(this.value));
+    });
+    updateWolvesMax(parseInt(document.getElementById("num_players").value));
+    document.getElementById("num_wolves").addEventListener("input", function() {
+      document.getElementById("num_wolves_val").textContent = this.value;
+    });
+    document.getElementById("num_rounds").addEventListener("input", function() {
+      document.getElementById("num_rounds_val").textContent = this.value;
+    });
+    document.querySelectorAll('input[name="mode"]').forEach(function(radio) {
+      radio.addEventListener("change", function() {
+        var spectatorOnly = document.querySelector(".spectator-only");
+        if (this.value === "human") {
+          spectatorOnly.style.display = "none";
+        } else {
+          spectatorOnly.style.display = "";
+        }
+      });
+    });
+  </script>
+
+{% elif page == "game" %}
+  <main class="container">
+    <div id="game-log"></div>
+    <div id="input-area" class="input-area hidden"></div>
+  </main>
+
+  <script>
+    var GAME_ID = "{{ game_id }}";
+    var LANG = "{{ lang }}";
+    var PLAYER_COLORS = [
+      "#c96c4c", "#2f7a72", "#4b5d9a", "#8a5fbf", "#b54747",
+      "#8b6f47", "#2f6d9a", "#3e8b57", "#b05c8f", "#6a4fb3"
+    ];
+
+    var TRANSLATIONS = {
+      en: {
+        thinking: "Thinking...",
+        discussionPhase: "Discussion Phase",
+        votingPhase: "Voting Phase",
+        reflectionPhase: "Post-Game Reflections",
+        voteTally: "Vote Tally",
+        gameReveal: "Game Reveal",
+        citizenWord: "Citizen word:",
+        wolfWord: "Wolf word:",
+        yourWord: "Your word:",
+        rounds: "Rounds:",
+        wasEliminated: "was eliminated!",
+        role: "Role:",
+        wolfFound: "A wolf was found! The eliminated wolf gets one chance to guess the citizen word...",
+        guesses: "guesses:",
+        citizenWordWas: "Citizen word was:",
+        correct: "Correct!",
+        incorrect: "Incorrect!",
+        generatingWordPair: "Generating word pair...",
+        playAgain: "Play Again",
+        error: "Error:",
+        randomFallback: "random fallback",
+        showThinking: "Show thinking",
+        hideThinking: "Hide thinking",
+        enterName: "Enter your name:",
+        join: "Join",
+        whatDoYouSay: "What do you say?",
+        send: "Send",
+        voteFor: "Vote for who you think is the wolf:",
+        vote: "Vote",
+        wolfGuessLabel: "You were the wolf! Guess the citizen word:",
+        guess: "Guess",
+        wolvesWinGuess: "WOLVES WIN! The eliminated wolf correctly guessed the citizen word!",
+        citizensWinGuess: "CITIZENS WIN! The eliminated wolf guessed wrong.",
+        wolvesWinEliminated: "WOLVES WIN! The citizens eliminated one of their own.",
+        votedFor: function(voterSpan, target) {
+          return voterSpan + " voted for <strong>" + target + "</strong>";
+        },
+        yourTurn: function(round, total, word) {
+          return "Your turn! (Round " + round + "/" + total + ", your word: <strong>" + word + "</strong>)";
+        }
+      },
+      ja: {
+        thinking: "考え中...",
+        discussionPhase: "議論フェーズ",
+        votingPhase: "投票フェーズ",
+        reflectionPhase: "振り返り",
+        voteTally: "投票集計",
+        gameReveal: "結果発表",
+        citizenWord: "市民の単語:",
+        wolfWord: "ウルフの単語:",
+        yourWord: "あなたの単語:",
+        rounds: "ラウンド数:",
+        wasEliminated: "が脱落しました！",
+        role: "役割:",
+        wolfFound: "ウルフが見つかりました！脱落したウルフに市民の単語を当てるチャンスが一度あります...",
+        guesses: "の推測:",
+        citizenWordWas: "市民の単語は:",
+        correct: "正解！",
+        incorrect: "不正解！",
+        generatingWordPair: "単語ペアを生成中...",
+        playAgain: "もう一度遊ぶ",
+        error: "エラー:",
+        randomFallback: "ランダム選択",
+        showThinking: "思考を表示",
+        hideThinking: "思考を隠す",
+        enterName: "名前を入力してください:",
+        join: "参加",
+        whatDoYouSay: "何を言いますか？",
+        send: "送信",
+        voteFor: "ウルフだと思う人に投票してください:",
+        vote: "投票",
+        wolfGuessLabel: "あなたはウルフでした！市民の単語を当ててください:",
+        guess: "推測する",
+        wolvesWinGuess: "ウルフの勝利！脱落したウルフが市民の単語を当てました！",
+        citizensWinGuess: "市民の勝利！脱落したウルフは単語を当てられませんでした。",
+        wolvesWinEliminated: "ウルフの勝利！市民が仲間を脱落させてしまいました。",
+        votedFor: function(voterSpan, target) {
+          return voterSpan + " が <strong>" + target + "</strong> に投票しました";
+        },
+        yourTurn: function(round, total, word) {
+          return "あなたの番です！(ラウンド " + round + "/" + total + "、あなたの単語: <strong>" + word + "</strong>)";
+        }
+      }
+    };
+
+    var t = TRANSLATIONS[LANG] || TRANSLATIONS.en;
+
+    var playerColorMap = {};
+
+    function assignColor(name) {
+      if (!playerColorMap[name]) {
+        var idx = Object.keys(playerColorMap).length % PLAYER_COLORS.length;
+        playerColorMap[name] = PLAYER_COLORS[idx];
+      }
+      return playerColorMap[name];
+    }
+
+    function escapeHtml(text) {
+      var div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function appendToLog(html) {
+      var log = document.getElementById("game-log");
+      var el = document.createElement("div");
+      el.className = "event fadeInUp";
+      el.innerHTML = html;
+      log.appendChild(el);
+      el.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+
+    function showThinkingIndicator() {
+      hideThinkingIndicator();
+      var log = document.getElementById("game-log");
+      var el = document.createElement("div");
+      el.className = "thinking-indicator";
+      el.id = "thinking-indicator";
+      el.innerHTML = '<span class="dots"><span></span><span></span><span></span></span> ' + escapeHtml(t.thinking);
+      log.appendChild(el);
+      el.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+
+    function hideThinkingIndicator() {
+      var el = document.getElementById("thinking-indicator");
+      if (el) el.remove();
+    }
+
+    function thinkingBlock(thinking) {
+      if (!thinking) return "";
+      var showTxt = escapeHtml(t.showThinking);
+      var hideTxt = escapeHtml(t.hideThinking);
+      return '<div class="thinking-block"><button type="button" class="thinking-toggle" onclick="this.nextElementSibling.classList.toggle(\'collapsed\');this.textContent=this.nextElementSibling.classList.contains(\'collapsed\')?t.showThinking:t.hideThinking">' + hideTxt + '</button><div class="thinking-content">' + escapeHtml(thinking) + '</div></div>';
+    }
+
+    function showInput(html, onSubmit) {
+      var area = document.getElementById("input-area");
+      area.innerHTML = html;
+      area.classList.remove("hidden");
+      document.getElementById("game-log").classList.add("has-input");
+      area.scrollIntoView({ behavior: "smooth", block: "end" });
+
+      var form = area.querySelector("form");
+      if (form) {
+        form.addEventListener("submit", function(e) {
+          e.preventDefault();
+          var value = onSubmit(form);
+          if (value !== null && value !== undefined && value !== "") {
+            fetch("/input/" + GAME_ID, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ value: value })
+            });
+            area.classList.add("hidden");
+            area.innerHTML = "";
+            document.getElementById("game-log").classList.remove("has-input");
+            showThinkingIndicator();
+          }
+        });
+      }
+    }
+
+    function handleEvent(data) {
+      hideThinkingIndicator();
+      switch (data.type) {
+        case "game_start": {
+          data.players.forEach(function(p) { assignColor(p.name); });
+          var playersHtml = data.players.map(function(p) {
+            var color = assignColor(p.name);
+            return '<span class="player-chip" style="border-color:' + color + ';color:' + color + '">' + escapeHtml(p.name) + '</span>';
+          }).join(" ");
+          var infoHtml = "";
+          if (!data.human_name) {
+            infoHtml = '<div class="info-row"><span class="info-label">' + escapeHtml(t.citizenWord) + '</span> <strong>' + escapeHtml(data.citizen_word) + '</strong></div>' +
+                       '<div class="info-row"><span class="info-label">' + escapeHtml(t.wolfWord) + '</span> <strong>' + escapeHtml(data.wolf_word) + '</strong></div>';
+          } else {
+            var humanPlayer = data.players.find(function(p) { return p.name === data.human_name; });
+            if (humanPlayer) {
+              infoHtml = '<div class="info-row"><span class="info-label">' + escapeHtml(t.yourWord) + '</span> <strong>' + escapeHtml(humanPlayer.word) + '</strong></div>';
+            }
+          }
+          appendToLog(
+            '<div class="game-header">' +
+            '<h2>Word Wolf</h2>' +
+            '<div class="players-row">' + playersHtml + '</div>' +
+            infoHtml +
+            '<div class="info-row"><span class="info-label">' + escapeHtml(t.rounds) + '</span> ' + data.num_rounds + '</div>' +
+            '</div>'
+          );
+          showThinkingIndicator();
+          break;
+        }
+        case "discussion_start":
+          appendToLog('<div class="phase-divider discussion-phase">' + escapeHtml(t.discussionPhase) + '</div>');
+          showThinkingIndicator();
+          break;
+
+        case "discussion_turn": {
+          var color = assignColor(data.speaker);
+          appendToLog(
+            '<div class="chat-bubble" style="border-left-color:' + color + '">' +
+            '<div class="chat-speaker" style="color:' + color + '">' + escapeHtml(data.speaker) + '</div>' +
+            thinkingBlock(data.thinking) +
+            '<div class="chat-text">' + escapeHtml(data.statement) + '</div>' +
+            '</div>'
+          );
+          showThinkingIndicator();
+          break;
+        }
+        case "voting_start":
+          appendToLog('<div class="phase-divider voting-phase">' + escapeHtml(t.votingPhase) + '</div>');
+          showThinkingIndicator();
+          break;
+
+        case "vote_cast": {
+          var color = assignColor(data.voter);
+          var voterSpan = '<span style="color:' + color + ';font-weight:700">' + escapeHtml(data.voter) + '</span>';
+          appendToLog(
+            '<div class="vote-card-web" style="border-left-color:' + color + '">' +
+            t.votedFor(voterSpan, escapeHtml(data.target)) +
+            (data.used_random_fallback ? ' <span class="fallback-badge">' + escapeHtml(t.randomFallback) + '</span>' : '') +
+            thinkingBlock(data.thinking) +
+            '</div>'
+          );
+          break;
+        }
+        case "vote_tally": {
+          var maxCount = Math.max.apply(null, Object.values(data.tally));
+          var rows = Object.keys(data.tally).sort(function(a, b) { return data.tally[b] - data.tally[a]; }).map(function(name) {
+            var count = data.tally[name];
+            var pct = maxCount > 0 ? (count / maxCount * 100) : 0;
+            var color = assignColor(name);
+            return '<div class="tally-row"><span class="tally-name" style="color:' + color + '">' + escapeHtml(name) + '</span><div class="tally-bar-bg"><div class="tally-bar" style="width:' + pct + '%;background:' + color + '"></div></div><span class="tally-count">' + count + '</span></div>';
+          }).join("");
+          appendToLog('<div class="tally-block"><strong>' + escapeHtml(t.voteTally) + '</strong>' + rows + '</div>');
+          break;
+        }
+        case "resolution_start":
+          break;
+
+        case "elimination":
+          appendToLog(
+            '<div class="elimination-reveal">' +
+            '<div class="elimination-name">' + escapeHtml(data.eliminated) + '</div>' +
+            '<div class="elimination-text">' + escapeHtml(t.wasEliminated) + '</div>' +
+            '<div class="elimination-role ' + data.role + '">' + escapeHtml(t.role) + ' ' + data.role.toUpperCase() + '</div>' +
+            '</div>'
+          );
+          break;
+
+        case "wolf_found":
+          appendToLog('<div class="drama-text">' + escapeHtml(t.wolfFound) + '</div>');
+          showThinkingIndicator();
+          break;
+
+        case "wolf_guess": {
+          appendToLog(
+            '<div class="guess-block">' +
+            thinkingBlock(data.thinking) +
+            '<div>' + escapeHtml(data.eliminated) + ' ' + escapeHtml(t.guesses) + ' <strong>' + escapeHtml(data.guess) + '</strong></div>' +
+            '<div>' + escapeHtml(t.citizenWordWas) + ' <strong>' + escapeHtml(data.citizen_word) + '</strong></div>' +
+            '</div>'
+          );
+          showThinkingIndicator();
+          break;
+        }
+        case "judge_result":
+          appendToLog('<div class="judge-result ' + (data.is_correct ? "correct" : "incorrect") + '">' + escapeHtml(data.is_correct ? t.correct : t.incorrect) + '</div>');
+          break;
+
+        case "game_result": {
+          var msg = data.winner === "wolves" ? t.wolvesWinGuess : t.citizensWinGuess;
+          var cls = data.winner === "wolves" ? "lose" : "win";
+          appendToLog('<div class="result-banner ' + cls + '">' + escapeHtml(msg) + '</div>');
+          break;
+        }
+        case "citizen_eliminated":
+          appendToLog('<div class="result-banner lose">' + escapeHtml(t.wolvesWinEliminated) + '</div>');
+          break;
+
+        case "reflection_start":
+          appendToLog('<div class="phase-divider reflection-phase">' + escapeHtml(t.reflectionPhase) + '</div>');
+          showThinkingIndicator();
+          break;
+
+        case "reflection": {
+          var color = assignColor(data.speaker);
+          var lessonsHtml = data.lessons_learned
+            ? '<div class="lessons-learned"><span class="lessons-label">Lessons Learned</span>' + escapeHtml(data.lessons_learned) + '</div>'
+            : '';
+          appendToLog(
+            '<div class="chat-bubble" style="border-left-color:' + color + '">' +
+            '<div class="chat-speaker" style="color:' + color + '">' + escapeHtml(data.speaker) + '</div>' +
+            '<div class="chat-text">' + escapeHtml(data.reflection) + '</div>' +
+            lessonsHtml +
+            '</div>'
+          );
+          break;
+        }
+        case "game_reveal": {
+          var rows = data.players.map(function(p) {
+            var color = assignColor(p.name);
+            return '<div class="reveal-row"><span style="color:' + color + ';font-weight:700">' + escapeHtml(p.name) + '</span>: ' + p.role.toUpperCase() + ' (' + escapeHtml(p.word) + ')</div>';
+          }).join("");
+          appendToLog(
+            '<div class="reveal-block">' +
+            '<strong>' + escapeHtml(t.gameReveal) + '</strong>' +
+            '<div>' + escapeHtml(t.citizenWord) + ' <strong>' + escapeHtml(data.citizen_word) + '</strong></div>' +
+            '<div>' + escapeHtml(t.wolfWord) + ' <strong>' + escapeHtml(data.wolf_word) + '</strong></div>' +
+            rows +
+            '</div>'
+          );
+          break;
+        }
+        case "generate_word_pair":
+          appendToLog('<div class="info-text">' + escapeHtml(t.generatingWordPair) + '</div>');
+          showThinkingIndicator();
+          break;
+
+        case "input_needed":
+          handleInputNeeded(data);
+          break;
+
+        case "game_end":
+          appendToLog('<div class="game-end"><a href="/" class="btn-start">' + escapeHtml(t.playAgain) + '</a></div>');
+          break;
+
+        case "error":
+          appendToLog('<div class="result-banner lose">' + escapeHtml(t.error) + ' ' + escapeHtml(data.message || "Unknown error") + '</div>');
+          break;
+      }
+    }
+
+    function handleInputNeeded(data) {
+      switch (data.input_type) {
+        case "player_name":
+          showInput(
+            '<form class="input-form"><label>' + escapeHtml(t.enterName) + '</label><input type="text" name="value" autofocus required><button type="submit">' + escapeHtml(t.join) + '</button></form>',
+            function(form) { return form.elements.value.value.trim(); }
+          );
+          break;
+
+        case "discussion":
+          appendToLog(
+            '<div class="info-text">' + t.yourTurn(data.round_num, data.total_rounds, escapeHtml(data.word)) + '</div>'
+          );
+          showInput(
+            '<form class="input-form"><label>' + escapeHtml(t.whatDoYouSay) + '</label><textarea name="value" rows="3" autofocus required></textarea><button type="submit">' + escapeHtml(t.send) + '</button></form>',
+            function(form) { return form.elements.value.value.trim(); }
+          );
+          break;
+
+        case "vote":
+          var options = data.candidates.map(function(c) {
+            return '<label class="vote-option"><input type="radio" name="value" value="' + escapeHtml(c) + '" required><span>' + escapeHtml(c) + '</span></label>';
+          }).join("");
+          showInput(
+            '<form class="input-form"><label>' + escapeHtml(t.voteFor) + '</label><div class="vote-options">' + options + '</div><button type="submit">' + escapeHtml(t.vote) + '</button></form>',
+            function(form) {
+              var checked = form.querySelector('input[name="value"]:checked');
+              return checked ? checked.value : null;
+            }
+          );
+          break;
+
+        case "wolf_guess":
+          showInput(
+            '<form class="input-form"><label>' + escapeHtml(t.wolfGuessLabel) + '</label><input type="text" name="value" autofocus required><button type="submit">' + escapeHtml(t.guess) + '</button></form>',
+            function(form) { return form.elements.value.value.trim(); }
+          );
+          break;
+      }
+    }
+
+    // SSE connection
+    var source = new EventSource("/stream/" + GAME_ID);
+    source.onmessage = function(event) {
+      try {
+        var data = JSON.parse(event.data);
+        handleEvent(data);
+        if (data.type === "game_end" || data.type === "error") {
+          source.close();
+        }
+      } catch (e) {
+        console.error("Failed to parse event:", e);
+      }
+    };
+    source.onerror = function() {
+      source.close();
+    };
+  </script>
+{% endif %}
+</body>
+</html>
