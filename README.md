@@ -18,12 +18,11 @@ Word Wolf is a word-based social deduction game:
 
 - **Fully autonomous gameplay**: Up to 10 LLM agents play from start to finish
 - **Human player mode**: Join the game yourself with `--human` and play alongside LLM agents
-- **Web UI**: Browser-based interface for watching or joining games (`web_app.py`)
 - **Multi-model support**: Assign different LLM models to each player for cross-model comparison
+- **Replay output**: Save full game records as JSON or HTML
 - **Experiment control**: Deterministic seeds, fixed wolf assignments, and word pair selection for reproducible experiments
 - **Configurable**: Number of players, wolves, rounds, and discussion language
-- **Replay output**: Save full game records as JSON or HTML
-- **Batch CLI runs**: Run multiple games in sequence with `--games` and collect per-player statistics
+- **Web UI**: Browser-based interface for watching or joining games (`web_app.py`)
 
 ## Requirements
 
