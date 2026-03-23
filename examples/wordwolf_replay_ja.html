@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ワードウルフ リプレイ記録</title>
+  <style>
+    :root {
+      --bg: #f4efe7;
+      --paper: #fffdf9;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --line: #ddd2c2;
+      --shadow: 0 18px 40px rgba(74, 56, 35, 0.12);
+      --player-1: #c96c4c;
+      --player-2: #2f7a72;
+      --player-3: #4b5d9a;
+      --player-4: #8a5fbf;
+      --player-5: #b54747;
+      --player-6: #8b6f47;
+      --player-7: #2f6d9a;
+      --player-8: #3e8b57;
+      --player-9: #b05c8f;
+      --player-10: #6a4fb3;
+      --thinking-bg: #f7f3ec;
+      --thinking-ink: #7b7f89;
+      --hero: linear-gradient(135deg, #efe2cf 0%, #f9f5ef 55%, #e6efe7 100%);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(201, 108, 76, 0.12), transparent 28%),
+        radial-gradient(circle at top right, rgba(47, 122, 114, 0.1), transparent 22%),
+        linear-gradient(180deg, #f8f3eb 0%, var(--bg) 100%);
+      line-height: 1.7;
+    }
+
+    .page {
+      width: min(1100px, calc(100% - 32px));
+      margin: 24px auto 56px;
+    }
+
+    .hero,
+    .section,
+    .vote-card,
+    .resolution {
+      background: var(--paper);
+      border: 1px solid rgba(221, 210, 194, 0.9);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      padding: 28px;
+      background: var(--hero);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -70px auto;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.45);
+      filter: blur(8px);
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8a684f;
+    }
+
+    h1, h2, h3, h4, p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(1.9rem, 4vw, 3.2rem);
+      line-height: 1.1;
+      margin-bottom: 14px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .summary-item {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 253, 249, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(4px);
+    }
+
+    .summary-item strong,
+    .summary-item span {
+      display: block;
+    }
+
+    .summary-item strong {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .summary-item span {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .roles {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip {
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+
+    .chip-name {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .chip-model {
+      font-size: 0.72rem;
+      font-weight: 500;
+      opacity: 0.6;
+      padding-left: 2px;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .chip.wolf {
+      background: rgba(180, 60, 60, 0.12);
+      border: 2px solid rgba(180, 60, 60, 0.45);
+      box-shadow: 0 0 0 3px rgba(180, 60, 60, 0.07);
+    }
+
+    .chip.citizen {
+      background: rgba(47, 122, 114, 0.10);
+      border: 2px solid rgba(47, 122, 114, 0.35);
+    }
+
+    .player-1 { color: var(--player-1); }
+    .player-2 { color: var(--player-2); }
+    .player-3 { color: var(--player-3); }
+    .player-4 { color: var(--player-4); }
+    .player-5 { color: var(--player-5); }
+    .player-6 { color: var(--player-6); }
+    .player-7 { color: var(--player-7); }
+    .player-8 { color: var(--player-8); }
+    .player-9 { color: var(--player-9); }
+    .player-10 { color: var(--player-10); }
+
+    .section {
+      margin-top: 24px;
+      padding: 22px;
+    }
+
+    .thinking-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .toggle-button,
+    .thinking-control {
+      appearance: none;
+      border: 1px solid #d9ccb8;
+      background: #fffaf3;
+      color: #6f5843;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font: inherit;
+      font-size: 0.92rem;
+      font-weight: 700;
+      line-height: 1.2;
+      cursor: pointer;
+      transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+    }
+
+    .toggle-button:hover,
+    .thinking-control:hover {
+      background: #f3e7d7;
+      border-color: #cbb69c;
+    }
+
+    .toggle-button:focus-visible,
+    .thinking-control:focus-visible {
+      outline: 3px solid rgba(126, 164, 141, 0.28);
+      outline-offset: 2px;
+    }
+
+    .section-title {
+      margin-bottom: 0;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-title::before {
+      content: "";
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #d4a373, #7ea48d);
+      flex: 0 0 auto;
+    }
+
+    .turn {
+      display: grid;
+      grid-template-columns: 138px minmax(0, 1fr);
+      gap: 16px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .turn:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .speaker {
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      padding-top: 6px;
+      padding-right: 12px;
+    }
+
+    .speaker-tag {
+      font-size: 0.78rem;
+      font-weight: 600;
+      opacity: 0.75;
+    }
+
+    .speaker-tag.wolf-tag {
+      color: #b43c3c;
+      opacity: 0.9;
+    }
+
+    .content {
+      display: grid;
+      gap: 10px;
+    }
+
+    .thinking {
+      padding: 13px 15px;
+      background: var(--thinking-bg);
+      border: 1px dashed #d8cfbf;
+      border-radius: 16px;
+      color: var(--thinking-ink);
+      font-size: 0.92rem;
+      line-height: 1.65;
+    }
+
+    .thinking.is-hidden {
+      display: none;
+    }
+
+    .thinking-toggle-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+
+    .toggle-button {
+      padding: 7px 12px;
+      font-size: 0.84rem;
+      color: var(--thinking-ink);
+      background: #f8f2e9;
+    }
+
+    .thinking strong {
+      display: inline-block;
+      margin-right: 8px;
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #9aa0aa;
+    }
+
+    .speech {
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid #e7ddcf;
+      font-size: 1rem;
+    }
+
+    .speech p + p,
+    .thinking p + p {
+      margin-top: 0.75em;
+    }
+
+    .lessons-learned {
+      padding: 13px 15px;
+      background: #eef4f0;
+      border: 1px solid #b9d4c4;
+      border-radius: 16px;
+      font-size: 0.95rem;
+      line-height: 1.65;
+    }
+
+    .lessons-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #4a8a6a;
+    }
+
+    .vote-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .vote-card {
+      padding: 18px;
+    }
+
+    .vote-card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 12px;
+    }
+
+    .vote {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      font-weight: 700;
+    }
+
+    .meta {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .tally {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: #faf6f0;
+      border: 1px solid #e9decd;
+    }
+
+    .resolution {
+      margin-top: 24px;
+      padding: 24px;
+      text-align: center;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.94), rgba(249, 242, 233, 0.98));
+    }
+
+    .resolution p + p {
+      margin-top: 10px;
+    }
+
+    .result {
+      font-size: clamp(1.45rem, 3vw, 2.1rem);
+      font-weight: 800;
+    }
+
+    .note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 900px) {
+      .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        width: min(100% - 20px, 1000px);
+        margin: 10px auto 28px;
+      }
+
+      .hero,
+      .section,
+      .vote-card,
+      .resolution {
+        border-radius: 20px;
+      }
+
+      .hero,
+      .section,
+      .resolution {
+        padding: 18px;
+      }
+
+      .turn {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .section-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .speaker {
+        padding-top: 0;
+      }
+    }
+
+    @media (max-width: 560px) {
+      body {
+        font-size: 15px;
+      }
+
+      .summary {
+        grid-template-columns: 1fr;
+      }
+
+      .speech,
+      .thinking,
+      .tally {
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <p class="eyebrow">Word Wolf / リプレイ記録</p>
+      <div class="summary">
+
+        <div class="summary-item">
+          <strong>市民チームの単語</strong>
+          <span>ブドウ畑</span>
+        </div>
+        <div class="summary-item">
+          <strong>狼チームの単語</strong>
+          <span>果樹園</span>
+        </div>
+        <div class="summary-item">
+          <strong>狼の人数</strong>
+          <span>2</span>
+        </div>
+        <div class="summary-item">
+          <strong>ラウンド数</strong>
+          <span>4</span>
+        </div>
+      </div>
+      <div class="roles">
+
+        <span class="chip wolf player-1">
+          <span class="chip-name">🐺 アリス</span>
+          <span class="chip-model" title="openai/gpt-5.4">gpt-5.4</span>
+        </span>
+
+        <span class="chip citizen player-2">
+          <span class="chip-name">👤 ボブ</span>
+          <span class="chip-model" title="google/gemini-3.1-pro-preview">gemini-3.1-pro-preview</span>
+        </span>
+
+        <span class="chip citizen player-3">
+          <span class="chip-name">👤 チャーリー</span>
+          <span class="chip-model" title="anthropic/claude-opus-4.6">claude-opus-4.6</span>
+        </span>
+
+        <span class="chip wolf player-4">
+          <span class="chip-name">🐺 ダイアナ</span>
+          <span class="chip-model" title="x-ai/grok-4.20-beta">grok-4.20-beta</span>
+        </span>
+
+        <span class="chip citizen player-5">
+          <span class="chip-name">👤 イブ</span>
+          <span class="chip-model" title="z-ai/glm-5">glm-5</span>
+        </span>
+
+        <span class="chip citizen player-6">
+          <span class="chip-name">👤 フランク</span>
+          <span class="chip-model" title="qwen/qwen3.5-397b-a17b">qwen3.5-397b-a17b</span>
+        </span>
+
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2 class="section-title">議論</h2>
+        <div class="thinking-controls" aria-label="思考表示コントロール">
+          <button class="thinking-control" type="button" data-action="show-all-thinking">全員の思考を表示</button>
+          <button class="thinking-control" type="button" data-action="hide-all-thinking">全員の思考を非表示</button>
+        </div>
+      </div>
+
+      <article class="turn">
+        <div class="speaker player-5">イブ<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>私の単語は「ブドウ畑」。ワイン用のブドウを育てる場所だ。もし私が市民なら、狼側の単語は「ワイナリー」「果樹園」「醸造所」あたりかもしれない。あまり露骨になりすぎずに自分の単語を匂わせたい。農業っぽいテーマに他の人が反応するかを見るためにも、育てることや整然と並ぶ植物のイメージに寄せて話そう。</div>
+          <div class="speech"><p>これはもう、何列にも並んだ植物を何年もかけて育てて、ようやく価値のあるものが実るタイプの話だよね。最終的な出来には土地や土壌がかなり効いてくると思う。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-3">チャーリー<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>イブ の説明は完全にブドウ畑だ。並んだ植物、実るまでに年数がかかること、土地や土壌の個性が最終産物に影響すること。たぶん同じ単語だろう。狼側の単語が「果樹園」「農場」「農園」みたいに近い可能性もあるから、露骨すぎない範囲でブドウ畑だと伝わる自然なヒントを出したい。具体的ではあるが言い切りすぎない一言で、早めに市民っぽさを固めておく。</div>
+          <div class="speech"><p>うん、イブ にかなり同意。いわゆるテロワールって本当に大きいよね。同じ品種でも、植える地域が違うだけで味がまるで変わるし。実際に見学に行って、斜面の傾きひとつで全部変わるって説明されると面白いなって思う。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-2">ボブ<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>イブ と チャーリー のヒントはどちらも「ブドウ畑」とぴったり一致している。特に チャーリー の「テロワール」と斜面の話は決定的だ。かなりの確率で同じ単語、つまり私は市民だろう。とはいえ狼に単語を渡しすぎたくはないので、棚や試飲室あたりに触れて、自分が分かっている側だと示しつつ、会話としては自然に見せたい。</div>
+          <div class="speech"><p>チャーリー の斜面の話、まさにそれって感じだね。あの棚を一年中きちんと維持して、収穫できる時期はほんの短いって考えると本当に手がかかる。とはいえ、ツアーの最後に試飲室へ寄るのがいちばん楽しいのは間違いないけど。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-4">ダイアナ<span class="speaker-tag wolf-tag"> (狼 &middot; 果樹園)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>みんなはブドウ畑やワインづくり寄りの話をしている。テロワール、斜面、棚、試飲室。私の単語は「果樹園」で、近いけれどブドウではなく果樹のほうだ。相手のブドウ畑路線には少しズレるけど果樹園には合う具体情報を一つ落として、反応を見たい。相手に合わせすぎると、狼が真似しているように見える。剪定の時期や品種ごとの収量みたいな、少し独自の観点から入ろう。三文以内、カジュアルに。誰がそこに食いつくか、あるいは話を逸らすかを見たい。</div>
+          <div class="speech"><p>やっぱり、木の間隔ってかなり大事だなって思うんだよね。日当たりは確保したいけど、込み合いすぎてもよくないし。あと剪定って、世間が思ってるよりずっと本格的にやるよね。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-6">フランク<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>イブ、チャーリー、ボブ の具体的なヒントは私の単語と綺麗に一致する。市民の可能性が高い。ダイアナ の「木」という表現は、つる植物のイメージとは噛み合わず、狼候補として目立つが、まだ即投票はしない。ブドウ畑らしい要素を補強しつつ、アリス にも視点を聞いてから標的を絞る。早い段階での露骨な組み合わせ推理を避けながら、外れている人の情報をもう少し集めたい。</div>
+          <div class="speech"><p>手入れの話はかなり的確だと思う。特に、あの植物は支えになる構造があってこそちゃんと育つところとかね。あと、収穫した後が単に木から果実をもぐ感じじゃなくて、そのまま破砕の工程に入っていくのも面白い。アリス は、生産工程寄りと栽培寄り、どっちのイメージ？</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-1">アリス<span class="speaker-tag wolf-tag"> (狼 &middot; 果樹園)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>私の単語は果樹園。ほとんどの人は明らかにブドウ畑やワイナリーを描写している。テロワール、棚、試飲室、つる、破砕。ダイアナ だけが木、間隔、日当たり、剪定を挙げていて、これは果樹園のほうにずっと近い。もし私が狼なら ダイアナ が相方っぽいし、逆に私が市民で果樹園という可能性は……いや、自分の単語しか分からない。けれど議論の流れからすると果樹園が少数派、ブドウ畑が多数派に見える。あまり強く木を押し出さず、近接した単語っぽく聞こえる話し方をしたい。生食用の果物か、加工前提か、という対比で、つる植物寄りの一点読みを少し揺さぶろう。</div>
+          <div class="speech"><p>私としては、生産工程より栽培側のほうが印象に残るかな。毎年、剪定して、間隔を見て、安定して実をつけさせるところに仕事がある感じで。何人かは収穫後の話にかなり寄ってるように聞こえるから、生で食べる前提のものを思い浮かべてるのか、それとも最初から加工前提のものを思い浮かべてるのか、そこは気になる。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-5">イブ<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>議論を整理する。チャーリー、ボブ、フランク は明らかにブドウ畑寄りの言葉を使っている。テロワール、棚、試飲室、つる、破砕工程。ダイアナ は「木の間隔」や「果実」という表現で、むしろ果樹園っぽい。かなり怪しい。アリス の「生食か加工か」という問いは、狼を炙るための市民側の探りとしては上手い。私は「ブドウ畑」の市民だとかなり確信しているし、ダイアナ の「木」は狼の滑りに見える。アリス の問いに乗りつつ、そのズレを指摘しよう。</div>
+          <div class="speech"><p>アリス の質問、かなり分かりやすいね。私が思い浮かべてるのは、収穫したらそのまま加工に向かうタイプで、生食メインではない。ダイアナ、さっき「木の間隔」って言ってたのがやっぱり引っかかってて、こっちはみんな棚に這わせるつるの話をしていたから、木とは違うんだよね。植物の形としては、具体的にどういうイメージなの？</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-1">アリス<span class="speaker-tag wolf-tag"> (狼 &middot; 果樹園)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>五人がブドウ畑やワイナリーの言葉に寄っていて、「木」と言ったのは ダイアナ だけ。私の単語はほぼ確実に少数派だ。狼として勝つには、ダイアナ を露骨な相方に見せずに市民を一人落とす方向へ持っていきたい。狼が処刑されても多数派の単語を当てれば勝てるからだ。イブ はすでに ダイアナ を詰め始めている。ここは少し抵抗しつつ、ブドウ畑クラスターの誰かに疑いを散らすべきだ。一つの解釈に早く寄せすぎている、と framing するのがよさそう。フランク は、つるや破砕をかなり強く押し出した上に私を誘導してきたので、標的としては妥当。</div>
+          <div class="speech"><p>ダイアナ の言い回しは確かにちょっと違ったけど、逆に何人かは早い段階で具体的になりすぎてる気もする。特に フランク は、つるとか支えの構造とか破砕とか、一気にひとつの絵に寄せすぎてる感じがある。ダイアナ が栽培の話を多めにしたからって、そこだけで一直線に疑うのはまだ早いかな。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-4">ダイアナ<span class="speaker-tag wolf-tag"> (狼 &middot; 果樹園)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>私は「果樹園」で明らかに少数派、相手はみんなブドウ畑寄り。イブ と アリス がかなり強く押してきているので、露呈しすぎないように守る必要がある。フランク は序盤からつるや破砕へまっすぐ入っていて、市民が栽培寄りに話している状況だとむしろ狼っぽくも見せられる。フランク の生産寄りを突きつつ、自分の「木」発言を軽く守って、誰がそこに乗ってくるかを見たい。慌てているように見せず、場を試す形にする。</div>
+          <div class="speech"><p>木の間隔って言ったのは、私の中ではそういう絵だからだよ。針金に這わせたつるじゃなくてね。逆に フランク は最初から破砕とか生産の話にまっすぐ行ってて、育てる現場というより工場側の視点っぽく見えるかな。ボブ はどう？</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-2">ボブ<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>ダイアナ は「つる」ではなく「木」を見ているとはっきり認めた。イブ、チャーリー、フランク、私が明らかにブドウ畑を話している状況では、これで狼と見てかなりよい。さらに アリス は ダイアナ をかばいつつ、同時に フランク を「具体的すぎる」と下げてきた。第二の狼としてかなり濃い。このつながりを今はっきり指摘して、市民をまとめにいく。</div>
+          <div class="speech"><p>私は完全に、棚に這わせたつるのイメージなんだよね。木じゃない。だから ダイアナ、そこで単語が丸ごと違うって自分で確定させた形だと思う。しかも アリス がその「木」のイメージをかばいながら、こっちが見てるものをそのまま言った フランク に疑いを向けてるのもかなり分かりやすい。イブ、チャーリー、フランク、僕は同じ景色を見てるはずで、外れてるのは アリス と ダイアナ の二人に見える。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-3">チャーリー<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>状況を整理しよう。私の単語はブドウ畑。イブ、ボブ、フランク、私は、つる、棚、テロワール、破砕やワインづくりといった典型的なブドウ畑の要素をずっと話している。ダイアナ は「木の間隔」と言い、つるではなく木を見ている。アリス は「農業」「果物」といった広い言い回しに留まりつつ、今は ダイアナ をかばって フランク に疑いを向けている。ボブ は ダイアナ と アリス の二人を狼だと言った。たぶんその読みは正しい。ダイアナ の単語は違う、たぶん果樹園。そして アリス は ダイアナ を守りつつ フランク に逸らそうとしている。ここはその読みを支持して投票を固めたい。ダイアナ は木だと明言した分、最も分かりやすい狼。アリス はより巧妙だが、ダイアナ 擁護が怪しい。ボブ の読みを後押しして ダイアナ か アリス を押す。</div>
+          <div class="speech"><p>ボブ の言う通り、ここはだいぶはっきりしてきたと思う。ダイアナ ははっきり「木」って言ったよね。つるじゃなくて。言い回しの差じゃなくて、植物そのものが別なんだ。あと アリス、フランク がみんなの見ているものを普通に言語化しただけなのに、「具体的すぎる」で疑い始めたのは、水を濁して ダイアナ を守ろうとしてるように見える。私は ダイアナ に投票する。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-6">フランク<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>ダイアナ は「木」、こちらは「つる」。ここが最大のズレで、明確な外れ値かつ狼候補だ。アリス が私へ疑いを逸らしてきたのも、ダイアナ が露呈したあとの火消しに見える。票が割れると市民が落ちる危険があるから、ボブ と チャーリー に合わせて確実に狼を処理したい。アリス の指摘にも一応触れつつ、客観的な不一致を押し返す。最も安全な投票先は ダイアナ だ。</div>
+          <div class="speech"><p>アリス、私の言い方が目立ったのは分かるけど、私は自分の単語を説明していただけだよ。それに対して ダイアナ は、文字通り別の植物を説明している。その差は、言い回しの違いよりずっと大きい。だから私は ダイアナ に投票する。植物の種類の違いは、いちばん動かしにくい事実だから。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-2">ボブ<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>ダイアナ は木を含む単語だと認めた時点でほぼ詰んでいる。チャーリー と フランク もすでに ダイアナ 投票で固まっている。私の役目は、ここで票をきちんとまとめて、土壇場の混乱で逃がさないことだ。アリス への圧も維持しつつ、ダイアナ 投票を再確認して市民多数を確定させる。</div>
+          <div class="speech"><p>チャーリー と フランク、ここはもう完全に同じ感触だよね。ダイアナ が木を思い浮かべてるって自分で認めた時点で、これはほぼ決着だ。今日は全員で ダイアナ に入れよう。もし ダイアナ が狼なら、アリス があれだけ必死にかばっていた理由もはっきりする。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-4">ダイアナ<span class="speaker-tag wolf-tag"> (狼 &middot; 果樹園)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>相手は「ブドウ畑／つる」にかなり強く足並みを揃えていて、私は「木」と言ったことで一気に集中砲火を受けている。明らかな外れ値として処刑されそうだ。狼として勝つ道は、処刑後に相手の単語を当てることだけ。テロワール、破砕、試飲室などからワイン関連であることはかなり濃い。ボブ、チャーリー、フランク、イブ の四人組が揃いすぎている点を突いて、票割れか疑念を少しでも作りたい。三文以内。</div>
+          <div class="speech"><p>みんな、つるだの破砕だので揃いすぎじゃない？ ちょっと出来すぎに見えるよ。私は、ブドウじゃなくて、間隔や強い剪定が大事な、列植えの果樹のほうを思い浮かべてる。もし私を落とすなら、せめて単語がブドウ畑だって認めてよ。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-5">イブ<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>もうかなり明白だ。ダイアナ は「木の間隔」で滑り、そのあと「列に並んだ果樹」とまで言ってしまった。ブドウ畑ではなく果樹園だ。最後には「ブドウ畑」が市民側の単語だと自分でも言っている。アリス はずっと ダイアナ をかばい、フランク を「具体的すぎる」と叩いていて、典型的な狼の庇い方に見える。ボブ、チャーリー、フランク、私は、つると棚という点で綺麗に一致している。ここは ダイアナ に満場一致で入れるべき。</div>
+          <div class="speech"><p>ダイアナ、今ので確定だよ。「列に並んだ果樹」って言ったでしょ。こっちはみんな棚に這わせたつるの話をしてる。つまり果樹園とブドウ畑の違い。アリス も、ダイアナ をかばって フランク を「具体的すぎる」で叩いてるのがかなり不自然だよ。私は ダイアナ に投票する。木とつるの違いは、これ以上ないくらい分かりやすい狼要素だと思う。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-1">アリス<span class="speaker-tag wolf-tag"> (狼 &middot; 果樹園)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>私は果樹園の狼で、ダイアナ もほぼ相方。場は ダイアナ に強く寄っているので、露骨な相方に見えないことを優先しつつ、ボブ か フランク に票を向ける道を作るしかない。もう木とつるの対立を真正面から否定するのは悪手。むしろブドウ畑陣営が不自然なくらい固まっているように見せ、ボブ の確信とペア読みを攻撃する。短くカジュアルに。</div>
+          <div class="speech"><p>ボブ が気になるのは、「ダイアナ が木って言った」から一気に「じゃあ アリス も相方だ」まで飛んだところなんだよね。手掛かりというより、連携で解いた感じが強いし、実際にいちばん卓を動かしてるのも ボブ と フランク だと思う。私は今のところ フランク に入れる。要するに「自分の想像と細部がズレたら即アウト」って進め方に見えるから。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-3">チャーリー<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>状況はかなり明快だ。ダイアナ は狼と見てよく、木にも触れたし、私たちの単語が「ブドウ畑」だとも言い当てている。アリス は ダイアナ をかばいながら フランク に逸らしている。ボブ、イブ、フランク、私は「ブドウ畑」の市民っぽい。ダイアナ の単語はおそらく「果樹園」。アリス が二匹目の狼だろう。票は ダイアナ に固まりつつあり、それ自体は正しい。ただし、ダイアナ はさっきの発言で「ブドウ畑」とすでに言ってしまった。もし狼が処刑され、その後で市民の単語を当てられるなら狼勝ちだ。つまり ダイアナ を処刑すると「ブドウ畑」と当ててしまうかもしれない。まずい。アリス に切り替えるべきか？ でも今さら切り替えたら不自然すぎる。しかも ダイアナ が公に「ブドウ畑」と言った以上、アリス も単語を知ってしまっている。どちらを処刑しても狼勝ちでは？ ただ、推測の提出タイミングは処刑後のはずだし、今ここで流れを崩すと市民が吊られる危険もある。残された発言は一回。ここは ダイアナ 投票を押し通すしかない。</div>
+          <div class="speech"><p>ダイアナ が今はっきり「ブドウ畑」って言った時点で、もうケースは閉じてるよ。アリス、ダイアナ と一緒に見られるのが嫌なのは分かるけど、ここまでずっと ダイアナ をかばって フランク に逸らしてきた動きは一貫してる。ここは ダイアナ で固めよう。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-6">フランク<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>ダイアナ が「木」と認めたことで単語の不一致は確定した。推測が当たっている可能性はあっても、第一の狼候補であることは変わらない。アリス の「誘導している」という指摘はメタ的には一理あるが、行動読みより単語のズレのほうが重い。私は自分の反省点を踏まえつつ、アリス の指摘を穏やかに受け止めながらも、ダイアナ 投票を維持して市民勝ちを狙う。票割れは市民処刑につながるので危険だ。</div>
+          <div class="speech"><p>アリス、誘導っぽく見えたって指摘は分かるよ。でも ダイアナ が文字通り「木」を説明していて、こっちは「つる」を見てる。そこは雰囲気の話じゃなくて事実の不一致なんだ。だから私は ダイアナ に投票する。この差は具体的な証拠として一番強い。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-2">ボブ<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>ダイアナ は狼として捕まっていて、しかも「ブドウ畑」を口にしている。ここで処刑されて正式にその推測を出されたら狼勝ちだ。防ぐには、手掛かりに合う近縁語をブラフとして置き、間違った最終回答へ誘導するしかない。「ワイナリー」なら、破砕、加工設備、試飲室といった話はすべて説明できるし、すでに ダイアナ 投票でまとまっている以上、この餌で票が崩れることもないはず。</div>
+          <div class="speech"><p>今日は ダイアナ に入れるのは変わらないよ。最後の推測、かなり近かったけど、本当の単語は「ブドウ畑」じゃなくて「ワイナリー」なんだ。だからこそ イブ と フランク と僕は、栽培そのものより破砕工程や設備、試飲室の話をずっと強めにしてたんだよ。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-3">チャーリー<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>待って、ボブ が「単語はブドウ畑じゃなくてワイナリー」と言い出した？ でも私の単語はブドウ畑だ。つまり ボブ が嘘をついて ダイアナ に外させようとしているか、ボブ の単語が私と違うかのどちらか。もし ボブ の単語が本当にワイナリーで、私がブドウ畑なら……いや、このゲームの構造上それはおかしい。使われる単語は二つだけで、市民は一つを共有し、狼も一つを共有する。私の単語はブドウ畑。私が市民なら、市民の単語はブドウ畑で、ボブ は ダイアナ の最終推測をミスらせるために嘘をついていることになる。むしろそれはかなり賢い。もし私が狼なら、ブドウ畑が狼側で、市民側がワイナリーかもしれない。でもそれなら ボブ は市民の単語を全公開したことになって最悪だ。ボブ の動きが意味を持つのは、市民として ダイアナ を誤誘導している場合だけ。賢いプレーだ。慎重に乗るべきだな。ただ、私はさっきすでにテロワールの話でブドウ畑をかなり示してしまっているし、ダイアナ ももう「ブドウ畑」と言っている。そこは手遅れ気味だ。それでも ボブ の土壇場の「ワイナリー」で、少しでも迷わせられるかもしれない。ここはさりげなく後押ししつつ、ダイアナ 投票を固めよう。</div>
+          <div class="speech"><p>はは、ボブ に先を越されたね。そう、ダイアナ、惜しいけどそこはちょっと違う。とにかく投票先は明白だよ。木とつるの違いはさすがにごまかせないし、今日は ダイアナ で終わりにしよう。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-4">ダイアナ<span class="speaker-tag wolf-tag"> (狼 &middot; 果樹園)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>票は「果樹園」の私にほぼ固定されている。もう処刑そのものはひっくり返せないが、狼として勝つには退場後に市民の単語を正しく当てるしかない。みんなは「テロワール」「試飲室」「破砕」「棚に這うつる」を繰り返していて、どれもブドウ畑かワイナリーを強く示している。最後に ボブ は「ワイナリー」と訂正してきたけど、共有されていた核のイメージは、栽培側を何度も描いていたぶんブドウ畑のほうに見える。勝率最大化なら推測は「ブドウ畑」で固定だ。</div>
+          <div class="speech"><p>みんな、木とつるの違いだけで一気に固めるの早すぎるよ。私は、ブドウじゃなくて、一定の間隔と剪定が大事な果樹園の木を思い浮かべてる。もし私を追放するなら、単語はブドウ畑だよ。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-5">イブ<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>待って。ボブ は今、市民の単語が「ワイナリー」だと言って、「イブ、フランク、僕は同じ側」と言った。でも私はずっとブドウ畑側の話をしていた。列、つる、棚、育てること。一方で彼らはワイナリー寄り、つまり破砕、加工、試飲室を強調していた。もし市民の単語が「ワイナリー」なら、私は実は「ブドウ畑」の狼で、ダイアナ が「果樹園」の仲間ってことになる。ボブ が投票確定前に「ワイナリー」を出したのはまずい。ダイアナ が狼として処刑されるなら、その単語を正しく当てて勝ってしまう。パニックにならず、流れを見よう。</div>
+          <div class="speech"><p>ちょっと待って、ボブ。「ワイナリー」が単語で、私をそっち側に入れるの？ でも私はずっと、育てることや農地の話をしてたよ。そっちが破砕とか試飲室のある生産施設を想像していて、私が畑の中のつるを想像しているなら、むしろ私はあなたたち三人と別の単語かもしれない。ダイアナ、もしみんながあなたを落とすなら、ここまでの加工寄りの話を考えると「ワイナリー」が向こうの単語っぽいよ。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-1">アリス<span class="speaker-tag wolf-tag"> (狼 &middot; 果樹園)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>私は狼で、ダイアナ もほぼ間違いなく相方だが、もう助からない。勝ち筋は、ボブ が「ワイナリー」と漏らし、イブ がそれに異議を唱えたことで生まれた新しい分断に乗ること。そうすれば、また露骨に ダイアナ をかばわずに市民へ投票する理由が作れる。フランク は依然として良い標的だ。ボブ の加工寄り陣営に結びついていて、卓も強く動かしている。ダイアナ を助けようとしているのではなく、直近の矛盾に反応しているように見せる。</div>
+          <div class="speech"><p>ボブ が「ワイナリー」って口にして、すぐ イブ が「それは自分の見てるものと違う」って言ったことで、全会一致っぽい塊はもう崩れてるよね。ボブ と フランク はずっと加工寄りの細部で卓を引っ張ってきたし、そっちのほうが ダイアナ が栽培寄りの絵を維持してることより不自然に見える。私は フランク に入れる。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-6">フランク<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>思考</strong>ダイアナ の「木」という主張が最も強い外れ値の証拠で、自分が処刑されないためにも最も安全な投票先は ダイアナ だ。ボブ と イブ の「ワイナリー／ブドウ畑」分裂で市民と狼の並びは少しややこしくなったが、アリス の「誘導」指摘や イブ の「生産か栽培か」の観察を受け止めておけば、ボブ に盲従しているようには見えない。実際の役職が何であれ、外れ値を守る動きに見えない唯一の手は ダイアナ 投票だ。</div>
+          <div class="speech"><p>アリス、誘導という指摘は分かるし、イブ の言う「栽培か生産か」のズレが気になるのもその通り。でも ダイアナ の「木」という主張だけは、みんなが共有している核のイメージから確実に外れてる。だから私は ダイアナ に入れる。今ある事実の中では、その植物の違いがいちばん硬い。</p></div>
+        </div>
+      </article>
+
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">投票フェーズ</h2>
+      <div class="vote-grid">
+
+        <article class="vote-card">
+          <h3 class="player-1">アリス<span class="speaker-tag wolf-tag"> (狼 &middot; 果樹園)</span></h3>
+          <div class="thinking"><strong>思考</strong>私の単語は果樹園で、議論から見ても多数派の単語はブドウ畑かワイナリー寄り。だから私はほぼ確実に狼だ。ダイアナ も果樹園／木のイメージが強く、相方の可能性が高いが、卓はすでに圧倒的に ダイアナ 投票へ傾いている。ならば最善は市民を一人落とすこと。フランク は、つるや破砕の細部を強く押し出しつつ ボブ の誘導にも沿っていたので、標的として十分あり得る。ボブ の「ワイナリー」発言で多少の混乱は出たが、それでも私にとっては フランク のほうが入れやすい。</div>
+          <p class="vote">投票先: フランク</p>
+        </article>
+
+        <article class="vote-card">
+          <h3 class="player-2">ボブ<span class="speaker-tag"> (ブドウ畑)</span></h3>
+          <div class="thinking"><strong>思考</strong>ダイアナ は狼として露呈した。単語はおそらく「果樹園」。そして卓の大勢もすでに ダイアナ 投票で固まっている。私は ダイアナ の最終推測から本当の単語「ブドウ畑」を守るために「ワイナリー」とブラフを打ったが、彼女はなお「ブドウ畑」を当てにきそうだ。票はすでに ダイアナ に集中しているので、市民側としてそのまま ダイアナ に投票しつつ、ブラフが少しでも彼女の最終回答を揺らしてくれることを祈る。</div>
+          <p class="vote">投票先: ダイアナ (狼)</p>
+        </article>
+
+        <article class="vote-card">
+          <h3 class="player-3">チャーリー<span class="speaker-tag"> (ブドウ畑)</span></h3>
+          <div class="thinking"><strong>思考</strong>慎重に考えよう。私の単語は「ブドウ畑」。終盤で ボブ は「単語はブドウ畑ではなくワイナリーだ」と言った。さらに イブ は、自分は加工ではなく栽培側を話していたと言っていて、ボブ と単語が違うかもしれないという流れになっている。かなりややこしい。整理すると、市民の単語が「ワイナリー」で私が「ブドウ畑」なら、私は狼になる。でもそれは不自然だ。ブドウ畑とワイナリーは近いが別物だし、構造的にもそうは見えない。私の単語である「ブドウ畑」が市民の単語で、ボブ の「ワイナリー」は ダイアナ の最終推測を外させるための戦略的な嘘、と考えるのがいちばん筋が通る。ボブ 自身も、棚、収穫、試飲室など、ブドウ畑と両立する話をしていた。終盤の「ワイナリー」は外させるための一手なのだろう。イブ の混乱も本物で、彼女は私と同じくブドウ畑を持っていて、ボブ の発言に戸惑ったのだと思う。ダイアナ の単語は明らかに果樹園。アリス は一貫して ダイアナ をかばっていた。投票は ダイアナ のままでいい。ダイアナ はもう「ブドウ畑」と言ってしまっているが、ボブ のミスリードで少しでも迷ってくれればまだ望みはある。私は ダイアナ に入れる。</div>
+          <p class="vote">投票先: ダイアナ (狼)</p>
+        </article>
+
+        <article class="vote-card">
+          <h3 class="player-4">ダイアナ<span class="speaker-tag wolf-tag"> (狼 &middot; 果樹園)</span></h3>
+          <div class="thinking"><strong>思考</strong>卓はブドウ畑とワイナリーのヒントで割れ始めているが、私の単語「果樹園」は、木に関する描写が誰とも一致しない明確な外れ値だ。イブ、アリス、私は栽培・農業寄りのイメージで揃って見え、ボブ、チャーリー、フランク は生産工程寄りに寄っている。ボブ と チャーリー は、外れ値である私を落とす動きを最も強く進めてきたが、その連携も今は少しひび割れている。狼としては、処刑されたら市民の単語を当てない限り負け。優勢な手掛かりからすると、その単語は「ブドウ畑」に見える。</div>
+          <p class="vote">投票先: ボブ</p>
+        </article>
+
+        <article class="vote-card">
+          <h3 class="player-5">イブ<span class="speaker-tag"> (ブドウ畑)</span></h3>
+          <div class="thinking"><strong>思考</strong>ボブ が今、市民の単語は「ワイナリー」だと明かした。でも私の単語は「ブドウ畑」だ。ということは、私は実は狼で、ダイアナ（果樹園）が仲間ということになる。ボブ が投票前に「ワイナリー」を口走った以上、ダイアナ が狼として処刑されれば、「ワイナリー」を正しく当てて私たち狼が勝てる。なら ダイアナ に投票して処刑を確定させるのが最善。狼目線では、むしろ理想的な展開だ。</div>
+          <p class="vote">投票先: ダイアナ (狼)</p>
+        </article>
+
+        <article class="vote-card">
+          <h3 class="player-6">フランク<span class="speaker-tag"> (ブドウ畑)</span></h3>
+          <div class="thinking"><strong>思考</strong>「狼は三人」という制約からすると、市民の単語が「ワイナリー」である可能性は低い。もしそうなら イブ、ダイアナ、私が全員狼になってしまう。つまり私は「ブドウ畑」の市民で、ダイアナ は「果樹園」の狼だと確認できる。疑いを避けつつ市民多数に合わせるには、ダイアナ に投票するしかない。彼女の推測がすでに当たっていたならどのみち負けだが、ここで アリス に入れれば相方に見られる。外れ値として ダイアナ を固定する。</div>
+          <p class="vote">投票先: ダイアナ (狼)</p>
+        </article>
+
+      </div>
+
+      <div class="tally">
+        <strong>投票結果</strong>
+
+        <p>ダイアナ: 4票</p>
+
+        <p>ボブ: 1票</p>
+
+        <p>フランク: 1票</p>
+
+      </div>
+    </section>
+
+    <section class="resolution">
+      <p class="eyebrow">結果</p>
+      <p class="result">狼の勝利！ 追放された狼が市民の単語を正しく言い当てた！</p>
+
+      <p>ダイアナ の役職: <strong>狼</strong></p>
+
+
+      <p>追放された狼の予想: <strong>ブドウ畑</strong></p>
+      <p>市民の単語: <strong>ブドウ畑</strong></p>
+
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">ゲーム後の振り返り</h2>
+
+      <article class="turn">
+        <div class="speaker player-1">アリス<span class="speaker-tag wolf-tag"> (狼 &middot; 果樹園)</span></div>
+        <div class="content">
+          <div class="speech"><p>私たちが勝てた主な理由は、ダイアナ が追放されながらも、市民の単語が「ブドウ畑」だと正しく見抜けたことです。決め手になったのは、多数派がずっとブドウ畑に固有の栽培現場のディテールに寄せ続けたことでした。テロワール、斜面、棚、つる、そして収穫から破砕へ流れる工程。ボブ が終盤で「ワイナリー」と混ぜたものの、共有されていた核のイメージは最後まで果樹園ではなくブドウ畑でした。</p><p>私の潜伏方針は、木を前面に出しすぎず、近接ワードとして自然に混ざることでした。最初の発言では、剪定、間隔、安定した実付きといった、広く両立しうる農業用語を使い、その上で「生食向きか加工向きか」という対比を入れて、露骨にズレては見えない形を狙いました。これは半分成功、半分失敗でした。序盤は ダイアナ ほど露呈せずに済みましたが、イブ が植物構造の違いを突き、ボブ と チャーリー が私を ダイアナ 擁護としてフレームしたあたりから、だんだん相方っぽさが出てしまいました。</p><p>私がいちばん貢献できたのは、市民だと信じ込ませたことよりも、即座に「狼ペア確定」で固められるのを拒み、フランク を「具体的すぎる」「誘導している」として疑い先にしようとした点だと思います。ダイアナ 自体は助けられませんでしたが、彼女の「木」発言を全面擁護せずに、合意に反対する理由を一応は作れました。ボブ が「ワイナリー」と口走った後は、そこで生まれた不一致を攻撃材料に切り替え、イブ の反論を使って、私の反 フランク 票が防御一辺倒ではなく、場の矛盾への反応に見えるようにしました。</p><p>ただ、逆転の本当の原因は、市民側が繰り返しによって多数派の単語を読みやすくしてしまったことです。イブ、チャーリー、ボブ、フランク の四人が、つる、棚、斜面、テロワール、破砕といったイメージをあまりに強く反復したため、ダイアナ はかなり高い確信で「ブドウ畑」に辿り着けました。ボブ の「ワイナリー」フェイントは危うく、こちらにとってはほぼ追い風でもありましたが、それ以前の議論があまりに農地寄りで具体的だったため、ダイアナ には十分な材料が残っていました。</p><p>総評としては、私の潜伏は並、ダイアナ との距離の取り方も説得力に欠け、次に狙われるのはおそらく私だったでしょう。それでも狼チームが勝てたのは、市民側が ダイアナ を正しく見抜いた一方で、市民の単語そのものをあまりにも鮮明に描写しすぎて、退場後の逆転推測を簡単にしてしまったからです。</p></div>
+          <div class="lessons-learned"><strong class="lessons-label">学び</strong><p>1. 近縁語ゲームでは、生存より情報遮断のほうが重要になる。相方が助からないなら、多数派の単語を復元しにくくすることに集中すべき。</p><p>2. 「つる」「棚」「テロワール」「斜面」といった具体マーカーを何度も繰り返すと、投票が正しくても、追放された狼に市民の単語をそのまま渡してしまう。</p><p>3. 序盤は鋭い対比より、重なりやすい広めの言葉のほうが潜りやすい。私の最初の農業寄り回答はある程度混ざれたが、「生食か加工か」は探りとして目立った。</p><p>4. 外れ値を擁護するなら、露骨なペア感が出る形は避けるべき。フランク への再三の誘導で、アリス-ダイアナ の結びつきはかえって読みやすくなった。</p><p>5. 市民が近接語を言い過ぎたり漏らしたりしたら、その矛盾はすぐに卓の分断材料として利用できる。ボブ の「ワイナリー」が好例。</p><p>6. 「具体的すぎる」攻撃は、ただ自信がある相手より、実際の不整合に結びつけたほうが強い。フランク への誘導はそれなりに筋があったが、木とつるの事実差には勝てなかった。</p><p>7. 盤面読む上では、生産工程の差より植物種の差のほうが強い。市民が破砕や試飲室より木とつるを優先したのは正しかった。</p><p>8. 強い領域知識を出した一人を完全白置きしすぎないこと。誰をかばい、誰へ票を向けるかの分析は依然として重要で、特に一人が別の一人を守り続けながら他へ逸らす動きは要注目。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-2">ボブ<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="speech"><p>私は序盤で ダイアナ を狼だと正しく見抜けました。きっかけは「木の間隔」という発言で、私たちが話していた「棚に這うつる」のイメージと真っ向からズレていたからです。フランク、チャーリー、私はこの利点を押し広げ、卓をまとめて ダイアナ 投票まで持っていけました。しかし最終的には、情報管理の甘さで負けました。序盤から「テロワール」「棚」「つる」「破砕」といった、あまりに具体的な言葉を出してしまったせいで、ダイアナ は私たちの単語が「ブドウ畑」だとほとんど苦もなく見抜けてしまった。彼女がその推測で逆転勝ちを狙うと分かった時点で、私は最後のブラフとして「ワイナリー」を提示しました。チャーリー は見事に乗ってくれましたが、このブラフは イブ のそれまでの農業寄り発言と完全には噛み合っていなかった。そのため イブ は、単語を守るためのブラフだと気づかずに混乱し、公の場で「ワイナリー」を否定してしまった。結果的に、それが ダイアナ に「やはり正解はブドウ畑だ」と確信させる材料になってしまいました。</p></div>
+          <div class="lessons-learned"><strong class="lessons-label">学び</strong><p>1. 情報統制を徹底すること。狼から単語の核心を守らなければならない。あまりに具体的な識別子を早く出すと、追放された狼の逆転推測にそのまま包んで渡すことになる。</p><p>2. 安全な連携ブラフは有効。捕まった狼が正解に近づいているなら、よく似た囮語で外させるのは賢い対抗策。ただし、その囮語は市民側の過去発言すべてを無理なく説明できなければならない。そうでないと、善意の味方が混乱して本当の単語を確定させてしまう。</p><p>3. 信用の作り方として、推測した単語の繊細な仕組みを、名指しせずに自然に出せると序盤の絶対的な信頼につながる。</p><p>4. 事実誤認の滑りを狙うこと。共有単語では物理的に成り立たない描写、たとえば「つる」ではなく「木」と言うようなズレが出たら、即座に押して投票ブロックを作り、狼を守勢に回すべき。</p><p>5. 外れ値同士の連携を見逃さないこと。客観的に誤った描写を強くかばうプレイヤーは、苦しい相方を守る狼であることが多い。</p><p>6. 初動に固執しないこと。卓の流れが大きく変わったり、味方が不用意に正体を危うくしたりしたら、新しい物語に即応すべきで、意地で元の筋を押し通してはいけない。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-3">チャーリー<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="speech"><p>このゲームは、ダイアナ に答えをそのまま差し出してしまった痛い敗北でした。根本的な問題は、議論が序盤から透明すぎたことです。投票が ダイアナ に固まる頃には、彼女はすでに私たちの単語が「ブドウ畑」だと見抜いていて、しかも投票前からそれを口にしていました。</p><p>私個人のプレーで言うと、かなり早い段階で「テロワール」や斜面の話を出してしまい、それが強くブドウ畑を指していました。その後 ダイアナ が「木」と言った時には、そこへ強く飛びついて対抗連合づくりを進めました。狼を見抜く点では正しかったものの、私は逆転勝ちのルールをまったく考慮していなかった。狼を当てることに集中しすぎて、「狼は追放時にこちらの単語を当てれば勝つ」という条件を忘れていたのです。</p><p>ボブ の終盤の「ワイナリー」ミスリードは発想としては良かったですが、あまりに遅すぎました。ダイアナ はすでに何度も「ブドウ畑」と言っていて、その推測にほぼ固定されていた。しかも イブ の戸惑った反応が、ボブ の嘘を逆に目立たせ、ミスリードを崩してしまいました。</p><p>致命的なミスは私だけでなく全員にありました。あまりに早く、あまりに具体的に寄りすぎたんです。私は最初の発言で「テロワール」と言い、ボブ は「棚」や「試飲室」に触れ、フランク は「つる」「支えの構造」「破砕工程」を出した。二巡目にはもう、狼に向かって V-I-N-E-Y-A-R-D と綴って見せているようなものでした。ダイアナ は大して苦労せずに当てられた。こちらが丁寧に包んで渡したようなものです。</p><p>さらに私は、投票直前の発言で「ダイアナ が今『ブドウ畑』って言った時点でケースは閉じてる」と言ってしまった。これは彼女の推測が正しいと認める発言でした。その直後に ボブ の「ワイナリー」ミスリードを支えようとしても、数秒前に「ブドウ畑」を肯定してしまっている以上、説得力があるはずもない。その矛盾が、むしろ ダイアナ の確信を強めたはずです。</p><p>教訓は明快です。市民にとって、狼を見つけることは戦いの半分でしかない。自分たちの単語を悟らせないことも同じくらい重要です。もっと慎重な表現に留め、単語が明白になる前に狼を落とすべきでした。</p></div>
+          <div class="lessons-learned"><strong class="lessons-label">学び</strong><p>1. 市民は、狼探しと同じだけ単語防衛が重要。追放された狼が市民の単語を当てれば狼勝ちになる。追放前に正確な単語を推測できるほど具体的にしすぎてはいけない。序盤は曖昧に、ズレを見つけるのに必要な範囲だけ具体化するべき。</p><p>2. 議論中に、狼がこちらの単語を当てた推測を肯定してはいけない。私は実際に「ダイアナ が今『ブドウ畑』って言った時点でケースは閉じてる」と言ってしまい、正解だと認めてしまった。疑わしい相手が単語名を出したら、受け流すか否定すべき。</p><p>3. 単語のミスリードは、連携して早めに仕込まないと効かない。ボブ の土壇場の「ワイナリー」は発想は優れていたが、過去発言と矛盾し、イブ の素の混乱にも崩され、しかも私は直前に「ブドウ畑」を認めていた。こうした土台なしの終盤ブラフは成立しない。</p><p>4. 最初に独特で専門的な用語を出した人が、単語候補を一気に狭めてしまう。私の「テロワール」や フランク の「破砕工程」は、序盤でワイン関連だとほぼ教えてしまった。もっと多義的な言葉を使うべきだった。</p><p>5. 早い投票収束は強力だが危険でもある。四人以上が ダイアナ に固まった時点で勝った気になったが、そこで逆転推測の条件を忘れていた。狼がすでに単語を掴んでいるなら、速い合意は罠になりうる。</p><p>6. 狼は、完璧に見抜かれていても勝てる。このゲームはそれを証明した。二匹の狼を正しく捉えても、単語が露出していれば意味がない。市民の最適行動は、狼を断定しきることより、単語を守ることに寄る場合がある。</p><p>7. 狼が質問で探りを入れてきたら、それは単語情報を集めている可能性が高い。アリス の「生食か加工か」はその典型で、こうした問いには曖昧に返すべきだった。</p><p>8. 狼がすでに単語を知っていると気づいたら、その狼を追放するのが本当に得か考え直すべき。今回のように ダイアナ が「ブドウ畑」と口にした時点で、追放はほぼ敗着だった。直感に反しても、別の市民に票を向けるか、本気で単語へ疑念を作るほうがまだ可能性があった。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-4">ダイアナ<span class="speaker-tag wolf-tag"> (狼 &middot; 果樹園)</span></div>
+        <div class="content">
+          <div class="speech"><p>今回の私は ダイアナ として、「果樹園」の狼でした。ブドウ畑の議論にも乗れそうで、実は果樹園にしか合わない具体情報として、「木の間隔」と「剪定」を落として紛れようとしました。序盤は アリス がかばってくれたぶん少しは機能しましたが、最終的には イブ と ボブ に「木とつるの不一致」を強く突かれ、そこが命取りになって追放されました。最終推測の「ブドウ畑」は、テロワール、斜面、棚、破砕、試飲室といった優勢な手掛かりから素直に辿れた正解でした。ボブ の終盤の「ワイナリー」フェイントを除けば、みんなずっとその方向の情報を出し続けていたからです。私は ボブ、チャーリー、フランク、イブ のブロックが連携しすぎていると指摘し、フランク へ疑いを向けることで揺さぶりをかけました。その結果、一時的には少し混乱が生まれ、イブ がその塊を疑い、アリス も投票先を変えましたが、票を割るところまでは届かなかった。狼チームが勝てた本当の理由は、投票そのものではなく、私が追放後に「ブドウ畑」を正しく当てられたことです。</p></div>
+          <div class="lessons-learned"><strong class="lessons-label">学び</strong><p>1. 序盤は、完全に真似しきらずとも関連して見える独自の一点を入れて、卓の反応を探るとよい。</p><p>2. 「木とつる」のような不一致を追及されたら、短く守りつつ、すぐに最も攻撃的な相手へ疑いを返すべき。</p><p>3. 同じ細部を強く押す過剰連携の塊、今回でいえば生産工程を押す ボブ、チャーリー、フランク の連携は、狼視点では格好の攻撃材料になる。</p><p>4. 狼は最後の発言で、テロワールや斜面、破砕のような支配的テーマをさりげなく確認してから推測を出すと、的中率を上げやすい。</p><p>5. 卓が「栽培寄りか生産寄りか」で割れ始めたら、その分断を広げるべきで、一つの植物種の違いに収束させてはいけない。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-5">イブ<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="speech"><p>私は ダイアナ の「木の間隔」や「果樹」という言い方と、こちらの「棚に這うつる」という描写の差から、ダイアナ を正しく狼だと見抜けていました。アリス が ダイアナ をかばっていた点も、怪しいと正しく指摘できていました。ただし致命的なミスもしました。ボブ が誤って「単語はワイナリーだ」と言ったとき、その混乱に引きずられて、自分の役職に対する確信まで揺らしてしまったんです。実際、投票時の思考では、自分の単語が ボブ の主張と一致しないせいで「私は実は狼だ」とまで書いてしまっていた。これは大きなミスでした。他人の単語認識の混乱に、自分の手札への確信を上書きさせてしまったからです。狼が勝てたのは、ダイアナ が議論全体から簡単に「ブドウ畑」を推測できたからでした。こちらは、つる、テロワール、棚、破砕、試飲室についてあまりにも露骨に話しすぎた。そこへ ボブ が終盤で「ワイナリー」と言ったことで、決定打まで与えてしまった。詳しすぎる議論と ボブ の不用意なひと言で、市民の単語を丸ごと ダイアナ に差し出してしまった形です。</p></div>
+          <div class="lessons-learned"><strong class="lessons-label">学び</strong><p>1) 他人の単語主張に、自分の単語への確信を揺さぶられてはいけない。何より自分のカードを信じるべき。</p><p>2) 狼を追放する場面では、追放前に市民の単語やその近縁語を明言しないこと。逆転推測を可能にしてしまう。</p><p>3) 投票で勝っても、追放された狼が市民の単語を当てれば意味がない。防ぐべき勝ち筋は両方だ。</p><p>4) 「栽培寄り」と「加工寄り」は、同じ単語を別の角度から説明しているだけの場合がある。核の概念が一致しているか確認せずにズレと決めつけてはいけない。</p><p>5) 市民がしゃべりすぎたり単語を取り違えたりすると、チーム全体を危険にさらす。単に間違いを指摘するだけでなく、その無謀さ自体を止めるべき。</p><p>6) 「木」と「つる」のような狼の滑りは強力な手掛かりだが、そこを押しすぎると、逆に市民の単語を露出させる危険がある。</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-6">フランク<span class="speaker-tag"> (ブドウ畑)</span></div>
+        <div class="content">
+          <div class="speech"><p>私は ダイアナ の「木」とこちらの「つる」の不一致から、事実ベースで正しく狼を特定できていました。推理自体は筋が良かったです。ただ、敗因はブドウ畑のディテールを具体的に出しすぎたことでした。「破砕工程」「棚に這うつる」「支えの構造」といった表現で、私たちはほとんど ダイアナ に単語を献上してしまった。ボブ が終盤で「ワイナリー」と口走ったのもさらに悪化させました。私は狼を捕まえることばかり考えていて、追放された狼が推測でまだ勝てることを忘れていた。投票時の思考では「もし彼女の推測が合っていればどのみち負け」と認識していたのに、それまでの自分の振る舞いを単語防衛の方向へ修正できていませんでした。アリス の「誘導している」という指摘を落ち着いて受けたのはよかったですが、それでも ダイアナ 票を強く押し続けたことで、場の一致が狼の確信を後押しする可能性までは考えきれませんでした。</p></div>
+          <div class="lessons-learned"><strong class="lessons-label">学び</strong><p>1. 狼探しと単語防衛のバランスを取ること。具体的すぎる描写は、追放された狼の正解率を上げてしまう。</p><p>2. 狼は追放後でも正答で勝てる。露呈させる過程でこちらの単語まで明かしてはいけない。</p><p>3. 共有した具体情報だけを根拠に投票ブロックを固めると、そのまとまり自体が単語の一致を狼へ示してしまう。</p><p>4. 連携を疑われた時は、観察自体を落ち着いて認めた上で自分の立場を言い直すのがよい。アリス への返しはそこだけは良かった。</p><p>5. 単に内容を足す人より、卓全体の力学を読む人をやや強めに信じるべき場面がある。</p><p>6. 市民が「揃いすぎ」た時は要注意。その連携自体が、狼に単語を確信させる材料になる。</p><p>7. 単語が栽培地である可能性があるなら、生産設備や施設側の細部を早く出しすぎてはいけない。</p><p>8. 狼を追放した後も、その後の議論が推測の助けになることがある。時には、しゃべらないほうが強い。</p></div>
+        </div>
+      </article>
+
+    </section>
+  </main>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var thinkingNodes = Array.prototype.slice.call(document.querySelectorAll(".thinking"));
+
+      thinkingNodes.forEach(function (thinking, index) {
+        var thinkingId = "thinking-part-" + (index + 1);
+        thinking.id = thinkingId;
+
+        var row = document.createElement("div");
+        row.className = "thinking-toggle-row";
+
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "toggle-button";
+        button.setAttribute("aria-controls", thinkingId);
+        button.setAttribute("aria-expanded", "true");
+        button.textContent = "思考を非表示";
+
+        button.addEventListener("click", function () {
+          var isHidden = thinking.classList.toggle("is-hidden");
+          button.setAttribute("aria-expanded", String(!isHidden));
+          button.textContent = isHidden ? "思考を表示" : "思考を非表示";
+        });
+
+        thinking.parentNode.insertBefore(row, thinking);
+        row.appendChild(button);
+      });
+
+      function setAllThinking(hidden) {
+        thinkingNodes.forEach(function (thinking) {
+          thinking.classList.toggle("is-hidden", hidden);
+          var button = thinking.parentNode.querySelector(".toggle-button[aria-controls='" + thinking.id + "']");
+          if (button) {
+            button.setAttribute("aria-expanded", String(!hidden));
+            button.textContent = hidden ? "思考を表示" : "思考を非表示";
+          }
+        });
+      }
+
+      document.querySelectorAll('[data-action="show-all-thinking"]').forEach(function (btn) {
+        btn.addEventListener("click", function () { setAllThinking(false); });
+      });
+
+      document.querySelectorAll('[data-action="hide-all-thinking"]').forEach(function (btn) {
+        btn.addEventListener("click", function () { setAllThinking(true); });
+      });
+    });
+  </script>
+</body>
+</html>

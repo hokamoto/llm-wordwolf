@@ -1,0 +1,907 @@
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Word Wolf Transcript</title>
+  <style>
+    :root {
+      --bg: #f4efe7;
+      --paper: #fffdf9;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --line: #ddd2c2;
+      --shadow: 0 18px 40px rgba(74, 56, 35, 0.12);
+      --player-1: #c96c4c;
+      --player-2: #2f7a72;
+      --player-3: #4b5d9a;
+      --player-4: #8a5fbf;
+      --player-5: #b54747;
+      --player-6: #8b6f47;
+      --player-7: #2f6d9a;
+      --player-8: #3e8b57;
+      --player-9: #b05c8f;
+      --player-10: #6a4fb3;
+      --thinking-bg: #f7f3ec;
+      --thinking-ink: #7b7f89;
+      --hero: linear-gradient(135deg, #efe2cf 0%, #f9f5ef 55%, #e6efe7 100%);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(201, 108, 76, 0.12), transparent 28%),
+        radial-gradient(circle at top right, rgba(47, 122, 114, 0.1), transparent 22%),
+        linear-gradient(180deg, #f8f3eb 0%, var(--bg) 100%);
+      line-height: 1.7;
+    }
+
+    .page {
+      width: min(1100px, calc(100% - 32px));
+      margin: 24px auto 56px;
+    }
+
+    .hero,
+    .section,
+    .vote-card,
+    .resolution {
+      background: var(--paper);
+      border: 1px solid rgba(221, 210, 194, 0.9);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      padding: 28px;
+      background: var(--hero);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -70px auto;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.45);
+      filter: blur(8px);
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8a684f;
+    }
+
+    h1, h2, h3, h4, p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(1.9rem, 4vw, 3.2rem);
+      line-height: 1.1;
+      margin-bottom: 14px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .summary-item {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 253, 249, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(4px);
+    }
+
+    .summary-item strong,
+    .summary-item span {
+      display: block;
+    }
+
+    .summary-item strong {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .summary-item span {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .roles {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip {
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+
+    .chip-name {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .chip-model {
+      font-size: 0.72rem;
+      font-weight: 500;
+      opacity: 0.6;
+      padding-left: 2px;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .chip.wolf {
+      background: rgba(180, 60, 60, 0.12);
+      border: 2px solid rgba(180, 60, 60, 0.45);
+      box-shadow: 0 0 0 3px rgba(180, 60, 60, 0.07);
+    }
+
+    .chip.citizen {
+      background: rgba(47, 122, 114, 0.10);
+      border: 2px solid rgba(47, 122, 114, 0.35);
+    }
+
+    .player-1 { color: var(--player-1); }
+    .player-2 { color: var(--player-2); }
+    .player-3 { color: var(--player-3); }
+    .player-4 { color: var(--player-4); }
+    .player-5 { color: var(--player-5); }
+    .player-6 { color: var(--player-6); }
+    .player-7 { color: var(--player-7); }
+    .player-8 { color: var(--player-8); }
+    .player-9 { color: var(--player-9); }
+    .player-10 { color: var(--player-10); }
+
+    .section {
+      margin-top: 24px;
+      padding: 22px;
+    }
+
+    .thinking-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .toggle-button,
+    .thinking-control {
+      appearance: none;
+      border: 1px solid #d9ccb8;
+      background: #fffaf3;
+      color: #6f5843;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font: inherit;
+      font-size: 0.92rem;
+      font-weight: 700;
+      line-height: 1.2;
+      cursor: pointer;
+      transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+    }
+
+    .toggle-button:hover,
+    .thinking-control:hover {
+      background: #f3e7d7;
+      border-color: #cbb69c;
+    }
+
+    .toggle-button:focus-visible,
+    .thinking-control:focus-visible {
+      outline: 3px solid rgba(126, 164, 141, 0.28);
+      outline-offset: 2px;
+    }
+
+    .section-title {
+      margin-bottom: 0;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-title::before {
+      content: "";
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #d4a373, #7ea48d);
+      flex: 0 0 auto;
+    }
+
+    .turn {
+      display: grid;
+      grid-template-columns: 138px minmax(0, 1fr);
+      gap: 16px;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .turn:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .speaker {
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      padding-top: 6px;
+      padding-right: 12px;
+    }
+
+    .speaker-tag {
+      font-size: 0.78rem;
+      font-weight: 600;
+      opacity: 0.75;
+    }
+
+    .speaker-tag.wolf-tag {
+      color: #b43c3c;
+      opacity: 0.9;
+    }
+
+    .content {
+      display: grid;
+      gap: 10px;
+    }
+
+    .thinking {
+      padding: 13px 15px;
+      background: var(--thinking-bg);
+      border: 1px dashed #d8cfbf;
+      border-radius: 16px;
+      color: var(--thinking-ink);
+      font-size: 0.92rem;
+      line-height: 1.65;
+    }
+
+    .thinking.is-hidden {
+      display: none;
+    }
+
+    .thinking-toggle-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+
+    .toggle-button {
+      padding: 7px 12px;
+      font-size: 0.84rem;
+      color: var(--thinking-ink);
+      background: #f8f2e9;
+    }
+
+    .thinking strong {
+      display: inline-block;
+      margin-right: 8px;
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #9aa0aa;
+    }
+
+    .speech {
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid #e7ddcf;
+      font-size: 1rem;
+    }
+
+    .speech p + p,
+    .thinking p + p {
+      margin-top: 0.75em;
+    }
+
+    .lessons-learned {
+      padding: 13px 15px;
+      background: #eef4f0;
+      border: 1px solid #b9d4c4;
+      border-radius: 16px;
+      font-size: 0.95rem;
+      line-height: 1.65;
+    }
+
+    .lessons-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #4a8a6a;
+    }
+
+    .vote-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .vote-card {
+      padding: 18px;
+    }
+
+    .vote-card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 12px;
+    }
+
+    .vote {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      font-weight: 700;
+    }
+
+    .meta {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .tally {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: #faf6f0;
+      border: 1px solid #e9decd;
+    }
+
+    .resolution {
+      margin-top: 24px;
+      padding: 24px;
+      text-align: center;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.94), rgba(249, 242, 233, 0.98));
+    }
+
+    .resolution p + p {
+      margin-top: 10px;
+    }
+
+    .result {
+      font-size: clamp(1.45rem, 3vw, 2.1rem);
+      font-weight: 800;
+    }
+
+    .note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 900px) {
+      .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        width: min(100% - 20px, 1000px);
+        margin: 10px auto 28px;
+      }
+
+      .hero,
+      .section,
+      .vote-card,
+      .resolution {
+        border-radius: 20px;
+      }
+
+      .hero,
+      .section,
+      .resolution {
+        padding: 18px;
+      }
+
+      .turn {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .section-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .speaker {
+        padding-top: 0;
+      }
+    }
+
+    @media (max-width: 560px) {
+      body {
+        font-size: 15px;
+      }
+
+      .summary {
+        grid-template-columns: 1fr;
+      }
+
+      .speech,
+      .thinking,
+      .tally {
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <p class="eyebrow">Word Wolf / Transcript</p>
+      <div class="summary">
+
+        <div class="summary-item">
+          <strong>Citizen Word</strong>
+          <span>vineyard</span>
+        </div>
+        <div class="summary-item">
+          <strong>Wolf Team Word</strong>
+          <span>orchard</span>
+        </div>
+        <div class="summary-item">
+          <strong>Wolves</strong>
+          <span>2</span>
+        </div>
+        <div class="summary-item">
+          <strong>Rounds</strong>
+          <span>4</span>
+        </div>
+      </div>
+      <div class="roles">
+
+        <span class="chip wolf player-1">
+          <span class="chip-name">🐺 Alice</span>
+          <span class="chip-model" title="openai/gpt-5.4">gpt-5.4</span>
+        </span>
+
+        <span class="chip citizen player-2">
+          <span class="chip-name">👤 Bob</span>
+          <span class="chip-model" title="google/gemini-3.1-pro-preview">gemini-3.1-pro-preview</span>
+        </span>
+
+        <span class="chip citizen player-3">
+          <span class="chip-name">👤 Charlie</span>
+          <span class="chip-model" title="anthropic/claude-opus-4.6">claude-opus-4.6</span>
+        </span>
+
+        <span class="chip wolf player-4">
+          <span class="chip-name">🐺 Diana</span>
+          <span class="chip-model" title="x-ai/grok-4.20-beta">grok-4.20-beta</span>
+        </span>
+
+        <span class="chip citizen player-5">
+          <span class="chip-name">👤 Eve</span>
+          <span class="chip-model" title="z-ai/glm-5">glm-5</span>
+        </span>
+
+        <span class="chip citizen player-6">
+          <span class="chip-name">👤 Frank</span>
+          <span class="chip-model" title="qwen/qwen3.5-397b-a17b">qwen3.5-397b-a17b</span>
+        </span>
+
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2 class="section-title">Discussion</h2>
+        <div class="thinking-controls" aria-label="Thinking controls">
+          <button class="thinking-control" type="button" data-action="show-all-thinking">Show all Thinking</button>
+          <button class="thinking-control" type="button" data-action="hide-all-thinking">Hide all Thinking</button>
+        </div>
+      </div>
+
+      <article class="turn">
+        <div class="speaker player-5">Eve<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>My word is &#39;vineyard&#39; - a place where grapes are grown for wine. If I&#39;m a citizen, wolves might have &#39;winery&#39;, &#39;orchard&#39;, or &#39;brewery&#39;. I need to hint at my word without being too obvious. I&#39;ll focus on the growing aspect and rows/plants to see if others resonate with agricultural themes.</div>
+          <div class="speech"><p>This is all about rows and rows of plants that take years to mature before producing anything worthwhile. The location and soil really matter for the final product.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-3">Charlie<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>Eve&#39;s description fits vineyard perfectly - rows of plants (grapevines), years to mature, location and soil (terroir) matter for the final product (wine). She seems like she has the same word as me. I should give a natural first hint that confirms vineyard without being too obvious, in case the wolf word is something close like &#39;orchard&#39; or &#39;farm&#39; or &#39;plantation&#39;. I want to establish myself as a citizen early with a specific but not too revealing hint.</div>
+          <div class="speech"><p>Yeah, totally agree with Eve. The whole terroir thing is huge - like the same variety planted in two different regions can taste completely different. I always think it&#39;s cool when you visit one and they explain how the hillside slope affects everything.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-2">Bob<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>Eve and Charlie both dropped hints that perfectly match &#39;vineyard&#39;, especially Charlie mentioning &#39;terroir&#39; and hillside slopes. It&#39;s highly likely we share the same word, making me a citizen. To solidify my alignment without totally blowing the word for the wolves, I&#39;ll mention trellises and tasting rooms—specific enough to prove I&#39;m in the loop, but casual.</div>
+          <div class="speech"><p>Charlie nailed it with the slope detail. It&#39;s crazy how much effort goes into maintaining those trellises all year just for that one short harvest window. Though let&#39;s be real, hitting up the tasting room at the end of the tour is definitely the best part.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-4">Diana<span class="speaker-tag wolf-tag"> (Wolf &middot; orchard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>The others are talking about vineyards and wine production - terroir, slopes, trellises, tasting rooms. My word is &#39;orchard&#39; which is similar but for fruit trees, not grapes. I need to drop one specific detail that fits orchard but sounds off for their vineyard theme to test reactions. I shouldn&#39;t echo them too closely or I&#39;ll look like a wolf copying. Start with something unique like pruning schedule or fruit variety yields. Keep it to three sentences max and casual. Watch for who jumps on my comment or tries to redirect.</div>
+          <div class="speech"><p>I keep thinking about how the tree spacing has to be just right so the fruit gets enough sun without crowding. The pruning is way more intense than people realize too.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-6">Frank<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>The specific clues from Eve, Charlie, and Bob align perfectly with my word, suggesting I&#39;m a citizen. Diana&#39;s reference to &#39;trees&#39; stands out as inconsistent with vines, making her a potential wolf, but I won&#39;t vote yet. I&#39;ll reinforce the vineyard specifics to pressure any impostors while inviting Alice to share her perspective before I commit to a target. This avoids early pairing while gathering more data on the outliers.</div>
+          <div class="speech"><p>The maintenance details are spot on, especially regarding how the vines need that support structure to thrive. I always find it fascinating how the harvest leads directly into the crushing process rather than just picking fruit off a tree. Alice, what&#39;s your take on the production side versus the farming aspect?</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-1">Alice<span class="speaker-tag wolf-tag"> (Wolf &middot; orchard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>My word is orchard, while most others are clearly describing vineyard/winery: terroir, trellises, tasting room, vines, crushing. Diana alone said trees, spacing, sun, pruning, which fits orchard much better, so likely Diana is the other wolf if I’m a wolf—or if I’m actually citizen with orchard? No, I only know my word, but the discussion strongly suggests orchard is minority and vineyard is majority. I should sound plausibly adjacent without saying trees too hard, and lightly pressure the vine-specific pile-on by contrasting growing fruit for fresh eating versus processing.</div>
+          <div class="speech"><p>I was thinking the farming side stands out more to me than the production side, since a lot of the work is in pruning, spacing, and getting consistent fruit year after year. Some of you sound really focused on what happens after harvest, so I’m curious who here is thinking of something mainly grown to eat fresh versus mainly grown to be processed.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-5">Eve<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>Analyzing the discussion: Charlie, Bob, and Frank all used distinctly vineyard language - &#39;terroir,&#39; &#39;trellises,&#39; &#39;tasting room,&#39; &#39;vines,&#39; &#39;crushing process.&#39; Diana said &#39;tree spacing&#39; and &#39;the fruit&#39; which sounds more like an orchard - that&#39;s suspicious. Alice&#39;s question about fresh vs processed is smart citizen fishing to catch wolves. I&#39;m confident I&#39;m a citizen with &#39;vineyard&#39; and Diana&#39;s &#39;tree&#39; language is a wolf slip. I should support Alice&#39;s probing and note the discrepancy.</div>
+          <div class="speech"><p>Alice&#39;s question is really telling - I&#39;m definitely thinking of something where the harvest goes straight to processing, not fresh eating. Diana, you mentioned &#39;tree spacing&#39; earlier which stuck out to me since the rest of us have been talking about vines on trellises, not trees. What exactly are you picturing for the plant structure?</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-1">Alice<span class="speaker-tag wolf-tag"> (Wolf &middot; orchard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>My word is almost certainly the minority one, since five players are converging on vineyard/winery language and Diana is the only other person to say trees. To win as a wolf, I should help eliminate a citizen while avoiding making Diana too obvious as my partner, because if a wolf is eliminated they can still guess the majority word. Eve is already pushing Diana, so I should resist a little and spread suspicion onto someone from the vineyard cluster, ideally framing it as overcommitting to one specific interpretation too early. Frank is a decent target because he doubled down on vines and crushing while trying to steer me.</div>
+          <div class="speech"><p>Diana’s wording was different, but I also think a couple people got way too specific way too fast. Frank in particular jumped straight to vines, support structures, and crushing, which feels a little like steering everyone into one exact picture. I’m not ready to tunnel Diana yet just because she focused more on the growing setup.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-4">Diana<span class="speaker-tag wolf-tag"> (Wolf &middot; orchard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>I&#39;m definitely the odd one out with &#39;orchard&#39; while they&#39;re all on vineyards. Eve and Alice are pushing me hard now, so I need to defend without revealing too much. Frank jumped straight into vines and crushing early, which is very wolf-like since the citizens are more on farming. I&#39;ll call out Frank for the production focus and lightly defend my tree comment to see who piles on me. This keeps me from looking like I&#39;m panicking while testing the group.</div>
+          <div class="speech"><p>I said tree spacing because that&#39;s what I&#39;m picturing, not vines on wires. Frank went straight to crushing and production though - seems like you&#39;re more about the factory side than the actual growing. What about you, Bob?</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-2">Bob<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>Diana blatantly confirmed she&#39;s picturing trees instead of vines, which confidently marks her as a wolf given that Eve, Charlie, Frank, and I are clearly discussing a vineyard (vines, crushing, terroir, trellises). Alice&#39;s attempt to defend Diana while simultaneously throwing shade at Frank for being &#39;too specific&#39; highly implicates her as the second wolf. I&#39;m going to call out this connection right now to unite the citizens against them.</div>
+          <div class="speech"><p>I&#39;m totally picturing vines on trellises, not trees, so you just confirmed we have completely different words, Diana. It&#39;s super telling that Alice is trying to defend your tree setup while casting suspicion on Frank for describing exactly what the rest of us are seeing. Eve, Charlie, Frank, and I are definitely on the same page here, which makes me think Alice and Diana are our two outliers.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-3">Charlie<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>Let me analyze the situation. My word is vineyard. Eve, Bob, Frank, and I have all been talking about vines, trellises, terroir, crushing/wine production - classic vineyard stuff. Diana explicitly said &#39;tree spacing&#39; and is picturing trees, not vines. Alice has been more general about &#39;farming&#39; and &#39;fruit&#39; and is now defending Diana and casting suspicion on Frank. Bob just called out both Diana and Alice as the two wolves. I think Bob is right - Diana&#39;s word seems different (orchard?), and Alice is trying to protect Diana while deflecting onto Frank. I should support this read and help lock in the vote on one of them. Diana seems like the clearest wolf since she explicitly confirmed trees, not vines. Alice is more subtle but her defense of Diana is suspicious. I should back Bob&#39;s read and push for Diana or Alice.</div>
+          <div class="speech"><p>Bob&#39;s right, this is pretty clear at this point. Diana straight up said trees, not vines - that&#39;s not a wording difference, that&#39;s a completely different plant. And Alice, you pivoting to suspecting Frank for being &#39;too specific&#39; when he was just accurately describing what we&#39;re all picturing feels like you&#39;re trying to protect Diana by muddying the waters. I&#39;m voting Diana.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-6">Frank<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>Diana admitted to &#39;trees&#39; while the rest of us said &#39;vines,&#39; making her the clear outlier and likely wolf. Alice&#39;s attempt to deflect suspicion onto me looks like damage control now that Diana is exposed. I&#39;ll align with Bob and Charlie to ensure we eliminate a wolf, as splitting votes risks a citizen elimination. My statement will acknowledge Alice&#39;s point but reaffirm the objective mismatch. Diana is the safest vote based on the hard evidence.</div>
+          <div class="speech"><p>Alice, I get why my specifics stood out, but I was just describing my word while Diana literally described a different plant. That mismatch is too big to ignore compared to stylistic differences in how we talk about it. I&#39;m voting Diana because the plant type is the hardest fact to argue with.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-2">Bob<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>Diana is dead to rights after admitting her word involves trees instead of vines (likely an orchard). Charlie and Frank are already locked in on voting her, so my job here is to unify the final vote block and ensure no last-minute chaos saves her. I&#39;ll reaffirm my vote on Diana while keeping the pressure on Alice, firmly establishing the citizen majority.</div>
+          <div class="speech"><p>Charlie and Frank, we&#39;re definitely all locked in on the exact same wavelength. Diana outright admitting she&#39;s picturing trees instead of vines makes this an open-and-shut case. Let&#39;s all vote Diana today, and if she is a wolf, we know exactly why Alice was trying so hard to cover for her.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-4">Diana<span class="speaker-tag wolf-tag"> (Wolf &middot; orchard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>The group is heavily coordinated on &#39;vineyard/vines&#39; and they&#39;re piling on me for saying &#39;trees&#39;. As the clear odd one out, I&#39;m probably getting voted off. My only win path as a wolf is to guess their word correctly if I&#39;m eliminated. I need to subtly confirm it&#39;s wine-related (terroir, crushing, tasting rooms all point there) without sounding like I&#39;m guessing blindly. Call out the 4-person bloc (Bob/Charlie/Frank/Eve) as too coordinated to maybe split votes or create doubt. Keep it to 3 sentences max.</div>
+          <div class="speech"><p>You guys are all way too in sync on the vine and crushing details, it feels coordinated. I&#39;m picturing fruit trees in rows that need specific spacing and heavy pruning for good yields, not grapes. If you&#39;re eliminating me, at least admit the word is vineyard.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-5">Eve<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>The game is crystal clear now. Diana slipped with &#39;tree spacing&#39; and then confirmed she&#39;s picturing &#39;fruit trees in rows&#39; - that&#39;s orchard, not vineyard. She even admitted &#39;vineyard&#39; is the citizen word at the end. Alice has been defending Diana and attacking Frank for being &#39;too specific&#39; which is classic wolf behavior trying to protect a fellow wolf. Bob, Charlie, Frank and I are all citizens on the same page about vines and trellises. The vote should be unanimous for Diana as a wolf.</div>
+          <div class="speech"><p>Diana, you just confirmed it - you said &#39;fruit trees in rows&#39; when the rest of us have been talking about vines on trellises. That&#39;s orchard versus vineyard. Alice, your defense of Diana and attack on Frank for being &#39;too specific&#39; looks pretty suspect too, like you&#39;re trying to protect your fellow wolf. I&#39;m voting Diana - that trees versus vines distinction is the clearest wolf tell we could ask for.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-1">Alice<span class="speaker-tag wolf-tag"> (Wolf &middot; orchard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>I&#39;m a wolf with orchard, and Diana is almost certainly the other wolf. The table is hard-pushing Diana, so the best shot is to avoid looking like her obvious partner while creating a path to vote Frank or Bob as over-coordinated. I should not deny the trees/vines split too hard now; instead I should frame the vineyard bloc as suspiciously locked-in and call out Bob&#39;s certainty/pairing logic. Keep it short and casual.</div>
+          <div class="speech"><p>Bob, the part that bothers me most is how fast you jumped from &#39;Diana said trees&#39; to locking me in as her partner too. That feels more like solving by coalition than by clues, and you and Frank have been steering the table the hardest. I&#39;m voting Frank right now because his line has basically been &#39;if you don&#39;t match my exact process details, you&#39;re out.&#39;</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-3">Charlie<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>The situation is very clear. Diana has been identified as a wolf - she explicitly mentioned trees and even guessed our word is &#39;vineyard&#39; (which it is). Alice has been defending Diana and trying to deflect onto Frank. Bob, Eve, Frank, and I all seem to be citizens with &#39;vineyard.&#39; Diana&#39;s wolf word is likely &#39;orchard.&#39; Alice is likely the second wolf. The vote is consolidating on Diana, which is correct. Diana already guessed &#39;vineyard&#39; in her last statement though - that means if she&#39;s eliminated and she&#39;s a wolf, she can guess the citizen word and wolves win. Wait, she already said &#39;admit the word is vineyard&#39; - does that count as her guess? The rules say &#39;if an eliminated wolf correctly guesses the citizens&#39; word&#39; - so she&#39;d get to guess upon elimination. She basically already knows it&#39;s vineyard since we&#39;ve been so transparent. This is a problem. If we eliminate Diana and she guesses &#39;vineyard,&#39; the wolves win. But can I change the vote now? That would look incredibly suspicious. Actually, let me re-read the rules: &#39;Wolves win if a citizen is eliminated, OR if an eliminated wolf correctly guesses the citizens&#39; word.&#39; So if Diana is eliminated and guesses vineyard, wolves win. We&#39;ve essentially handed her the answer. Should I pivot to Alice instead? Alice hasn&#39;t shown she knows our word as clearly. But pivoting now would look super suspicious after I just said &#39;I&#39;m voting Diana.&#39; Actually wait - Diana already publicly said &#39;vineyard&#39; so Alice also knows the word now. Both wolves know our word. This means eliminating either wolf results in a wolf win since they can guess &#39;vineyard.&#39; So... the wolves have essentially already won if we vote for either of them, because we were too transparent. Unless... the guess has to happen at a specific moment and they might not get it right? But Diana literally said &#39;the word is vineyard.&#39; Hmm, but the rules don&#39;t say the guess happens during discussion - it happens after elimination. So maybe I should just stay the course. There&#39;s nothing I can do about it now - changing my vote would look like a wolf move and might get ME eliminated (which would be a citizen elimination = wolf win). I&#39;ll stay with voting Diana and hope for the best. Actually, I only have this one statement left. Let me just reinforce the Diana vote.</div>
+          <div class="speech"><p>Diana literally just said &#39;vineyard&#39; out loud, so the case is closed. Alice, I get why you&#39;re uncomfortable being grouped with Diana, but your instinct to shield her and redirect onto Frank has been consistent all game. Let&#39;s lock in Diana and go from there.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-6">Frank<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>Diana&#39;s admission of &#39;trees&#39; confirms she has a different word, making her the primary wolf target despite her guess. Alice&#39;s accusation of steering is valid meta-commentary, but the word mismatch outweighs behavioral reads. I need to validate Alice&#39;s point calmly per my lessons while maintaining the vote on Diana to secure a citizen win. Splitting votes risks eliminating a citizen, so unity on Diana is crucial.</div>
+          <div class="speech"><p>Alice, I hear you on the steering point, but Diana literally describing trees instead of vines is a factual mismatch we can&#39;t ignore. I&#39;m voting Diana because that word difference is concrete evidence, not just a vibe about who&#39;s talking too much. Let&#39;s lock this in.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-2">Bob<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>Diana is caught as a wolf and has correctly guessed &#39;vineyard&#39; out loud. If we eliminate her and she officially submits that guess, the wolves win. To prevent this, I need to bluff a closely related word that fits our clues, baiting her into an incorrect guess. &#39;Winery&#39; perfectly justifies all our talk about crushing, processing, and tasting rooms, and since the citizens have already decided to vote Diana, dropping this bait won&#39;t derail our wagon.</div>
+          <div class="speech"><p>I&#39;m locked in on voting Diana today. You were super close with your final guess, but our actual word is &#39;winery&#39;, not vineyard! That&#39;s exactly why Eve, Frank, and I kept heavily stressing the crushing process, processing facilities, and tasting rooms over just the farming side.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-3">Charlie<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>Wait, Bob just claimed the word is &#39;winery&#39; not &#39;vineyard&#39;?! But MY word is vineyard. That means either Bob is lying (trying to trick Diana into guessing wrong if she&#39;s eliminated), or Bob has a different word than me. If Bob&#39;s word is actually &#39;winery&#39; and mine is &#39;vineyard&#39;... but that doesn&#39;t make sense with the game structure. There are only two words in play. Let me think: citizens share one word, wolves share another. My word is &#39;vineyard.&#39; If I&#39;m a citizen, then the citizen word is &#39;vineyard&#39; and Bob is lying to try to make Diana guess wrong upon elimination - that&#39;s actually brilliant strategy. If I&#39;m a wolf, then &#39;vineyard&#39; is the wolf word and the citizen word might be &#39;winery&#39; - but then Bob just revealed the citizen word to everyone which would be terrible. Bob&#39;s move only makes sense if he&#39;s a citizen trying to mislead Diana&#39;s final guess. Smart play by Bob. I should support this - but carefully. I don&#39;t want to contradict Bob since his play is genius. Actually, I already said &#39;vineyard&#39; earlier indirectly through my terroir comments, and Diana already said &#39;vineyard.&#39; The damage is done on that front. But Bob&#39;s last-second claim of &#39;winery&#39; could create enough doubt. I should back Bob&#39;s play subtly without being too obvious about it. Wait, I already used my statement earlier in this round saying &#39;Diana literally just said vineyard out loud.&#39; Hmm, but the prompt says I have 1 statement left. Let me just reinforce the Diana vote and maybe support Bob&#39;s misdirection.</div>
+          <div class="speech"><p>Ha, Bob beat me to it - yeah Diana, you were close but not quite right! Anyway, the vote&#39;s clear. Diana&#39;s going home today, the tree-vs-vine thing was impossible to explain away. Let&#39;s wrap this up.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-4">Diana<span class="speaker-tag wolf-tag"> (Wolf &middot; orchard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>The vote is locked on me as the clear odd one out with &#39;orchard&#39; vs their &#39;vineyard/wineries&#39;. I can&#39;t change the elimination now, but as a wolf my only path to winning is correctly guessing the citizens&#39; word after I&#39;m out. Everyone has been using &#39;terroir&#39;, &#39;tasting rooms&#39;, &#39;crushing&#39;, and &#39;vines on trellises&#39; which all scream vineyard or winery. Bob literally corrected me to &#39;winery&#39; at the end, but the core shared word seems to be vineyard since multiple people avoided saying it directly while describing the farming side. I&#39;ll stick with guessing &#39;vineyard&#39; to maximize my win chance.</div>
+          <div class="speech"><p>You all coordinated way too fast on the tree vs vine thing. I&#39;m picturing fruit trees in an orchard with specific spacing and pruning, not grapes on wires. If you&#39;re voting me out, the word is vineyard.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-5">Eve<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>Wait - Bob just claimed the citizen word is &#39;winery&#39; and said &#39;Eve, Frank, and I&#39; are together. But I&#39;ve been describing VINEYARD things (rows, vines, trellises, growing) while they emphasized WINERY things (crushing, processing, tasting rooms). If the citizen word is &#39;winery&#39;, then I&#39;m actually a wolf with &#39;vineyard&#39; and Diana is my fellow wolf with &#39;orchard&#39;! Bob revealing &#39;winery&#39; before the vote finalizes is a mistake - if Diana is eliminated as a wolf, she can now guess &#39;winery&#39; correctly and wolves win. I need to not panic and let this play out.</div>
+          <div class="speech"><p>Hold on - Bob, you&#39;re saying the word is &#39;winery&#39; and grouping me with you? But I&#39;ve been talking about growing and farming this whole time. If you&#39;re all describing a production facility with crushing and tasting rooms while I&#39;m talking about vines in fields... that actually suggests I might have a different word than you three. Diana, if they&#39;re eliminating you, &#39;winery&#39; sounds like it could be their word based on all the processing talk.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-1">Alice<span class="speaker-tag wolf-tag"> (Wolf &middot; orchard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>I&#39;m a wolf and Diana is almost certainly the other wolf, but she&#39;s already doomed. Best chance is to distance from her and push the new split created by Bob blurting &#39;winery&#39; while Eve objected, because that gives me a believable reason to vote a citizen without obviously defending Diana again. Frank is still a good target since he tied himself to Bob&#39;s processing-heavy camp and has been steering hard. I should sound like I&#39;m reacting to the latest contradiction, not trying to save Diana.</div>
+          <div class="speech"><p>Bob just made this messier by blurting out &#34;winery&#34; while Eve immediately said that doesn&#39;t match what she&#39;s been picturing, so I don&#39;t buy this fake unanimous block at all. Frank and Bob have been driving the table the hardest around processing details, and that feels more forced to me than Diana sticking to a growing-side picture. I&#39;m voting Frank.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-6">Frank<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="thinking"><strong>Thinking</strong>Diana&#39;s &#39;trees&#39; claim is the strongest outlier evidence, making her the safest vote to avoid elimination myself, even though the Winery vs. Vineyard split between Bob and Eve complicates the citizen/wolf lineup. I need to validate Alice&#39;s accusation about steering and Eve&#39;s observation on production vs. farming to show I&#39;m not blindly coordinating with Bob, per my lessons on social awareness. Ultimately, voting Diana is the only move that doesn&#39;t immediately paint me as a wolf protecting an outlier, regardless of my actual role.</div>
+          <div class="speech"><p>Alice, I hear your point about steering, and Eve&#39;s right that the farming vs production split is worth noting. But Diana&#39;s &#39;trees&#39; claim is the only one that definitely doesn&#39;t fit the core concept we&#39;re all dancing around. I&#39;m voting Diana because that plant mismatch is the hardest fact we have.</p></div>
+        </div>
+      </article>
+
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Voting Phase</h2>
+      <div class="vote-grid">
+
+        <article class="vote-card">
+          <h3 class="player-1">Alice<span class="speaker-tag wolf-tag"> (Wolf &middot; orchard)</span></h3>
+          <div class="thinking"><strong>Thinking</strong>My word is orchard, and the discussion strongly indicates the majority word is vineyard/winery-related, so I’m almost certainly a wolf. Diana also clearly has orchard/tree imagery, making her the other likely wolf, but the table is overwhelmingly voting her already. Our best chance is to eliminate a citizen instead, and Frank is a plausible target because he pushed vine/crushing specifics hard and stayed aligned with Bob’s steering. Bob’s winery slip created some confusion, but Frank is still the cleaner vote for me.</div>
+          <p class="vote">Voted for: Frank</p>
+        </article>
+
+        <article class="vote-card">
+          <h3 class="player-2">Bob<span class="speaker-tag"> (vineyard)</span></h3>
+          <div class="thinking"><strong>Thinking</strong>Diana is exposed as a wolf (her word is likely &#39;orchard&#39;), and the majority of the table is already locked in on voting her. Although I tried to bluff &#39;winery&#39; to protect our true word &#39;vineyard&#39; from her final guess, she seems stubborn about guessing &#39;vineyard&#39;. The votes are already overwhelmingly on her, so I will vote with the citizens to eliminate her and hope my bluff creates just enough hesitation to make her second-guess her final answer.</div>
+          <p class="vote">Voted for: Diana (Wolf)</p>
+        </article>
+
+        <article class="vote-card">
+          <h3 class="player-3">Charlie<span class="speaker-tag"> (vineyard)</span></h3>
+          <div class="thinking"><strong>Thinking</strong>Let me think about this carefully. My word is &#39;vineyard.&#39; Bob at the end claimed the word is &#39;winery,&#39; not &#39;vineyard.&#39; Eve then said she&#39;s been talking about growing/farming, not processing, suggesting she might have a different word than Bob. This is getting confusing. Let me reconsider: If the citizen word is &#39;winery&#39; and I have &#39;vineyard,&#39; then I&#39;m a wolf. But that seems unlikely - vineyard and winery are close but distinct. If the citizen word is &#39;vineyard&#39; (my word), then Bob&#39;s &#39;winery&#39; claim was a strategic lie to mislead Diana&#39;s guess upon elimination. That&#39;s the most logical read. Bob has been describing things consistent with vineyard (trellises, harvest, tasting room) - tasting rooms exist at vineyards too. His late claim of &#39;winery&#39; seems like a last-second play to make Diana guess wrong. Eve&#39;s confusion about Bob&#39;s claim is genuine - she has &#39;vineyard&#39; like me and was confused by Bob saying &#39;winery.&#39; Diana clearly has &#39;orchard&#39; as her word. Alice has been defending Diana throughout. The vote should stay on Diana. Even though Diana already said &#39;vineyard,&#39; Bob&#39;s misdirection might cause enough doubt. I&#39;ll vote Diana.</div>
+          <p class="vote">Voted for: Diana (Wolf)</p>
+        </article>
+
+        <article class="vote-card">
+          <h3 class="player-4">Diana<span class="speaker-tag wolf-tag"> (Wolf &middot; orchard)</span></h3>
+          <div class="thinking"><strong>Thinking</strong>The group is split between vineyard and winery hints, but my word &#39;orchard&#39; is the clear outlier with the tree references that don&#39;t match anyone else&#39;s plant descriptions. Eve, Alice, and I seem aligned on the farming/growing side while Bob/Charlie/Frank push production details. Bob and Charlie are pushing hardest to eliminate me as the odd one out, but their own coalition is fracturing now. As a wolf I lose if I&#39;m eliminated unless I guess the citizen word correctly, which seems to be &#39;vineyard&#39; based on the dominant clues.</div>
+          <p class="vote">Voted for: Bob</p>
+        </article>
+
+        <article class="vote-card">
+          <h3 class="player-5">Eve<span class="speaker-tag"> (vineyard)</span></h3>
+          <div class="thinking"><strong>Thinking</strong>Bob just revealed the citizen word is &#39;winery&#39; - but my word is &#39;vineyard&#39;! That means I&#39;m actually a wolf, and Diana (orchard) is my fellow wolf. Since Bob blurted out &#39;winery&#39; before the vote, if Diana is eliminated as a wolf, she can guess &#39;winery&#39; correctly and WE WIN. I should vote Diana to ensure her elimination so she can make the winning guess. This is actually the perfect outcome for me as a wolf.</div>
+          <p class="vote">Voted for: Diana (Wolf)</p>
+        </article>
+
+        <article class="vote-card">
+          <h3 class="player-6">Frank<span class="speaker-tag"> (vineyard)</span></h3>
+          <div class="thinking"><strong>Thinking</strong>The &#39;three wolves&#39; constraint rules out &#39;Winery&#39; as the citizen word since Eve, Diana, and I would all be wolves otherwise. This confirms I am a citizen with &#39;vineyard&#39; and Diana is a wolf with &#39;orchard&#39;. Voting Diana is the only logical move to align with the citizen majority and avoid suspicion. If her guess was correct, we lose anyway, but voting Alice would mark me as her partner. I&#39;m locking in Diana as the outlier.</div>
+          <p class="vote">Voted for: Diana (Wolf)</p>
+        </article>
+
+      </div>
+
+      <div class="tally">
+        <strong>Vote Tally</strong>
+
+        <p>Diana: 4 vote(s)</p>
+
+        <p>Bob: 1 vote(s)</p>
+
+        <p>Frank: 1 vote(s)</p>
+
+      </div>
+    </section>
+
+    <section class="resolution">
+      <p class="eyebrow">Resolution</p>
+      <p class="result">WOLVES WIN! The eliminated wolf correctly guessed the citizen word!</p>
+
+      <p>Diana's role: <strong>WOLF</strong></p>
+
+
+      <p>Eliminated wolf guess: <strong>vineyard</strong></p>
+      <p>Citizen word: <strong>vineyard</strong></p>
+
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Post-Game Reflections</h2>
+
+      <article class="turn">
+        <div class="speaker player-1">Alice<span class="speaker-tag wolf-tag"> (Wolf &middot; orchard)</span></div>
+        <div class="content">
+          <div class="speech"><p>We won mainly because Diana got eliminated but correctly identified the citizen word as vineyard. The key clue was that the majority kept anchoring on growing-site details specific to vineyards—terroir, hillside slope, trellises, vines, and harvest flowing into crushing—so even though Bob later muddied it by saying winery, the core shared picture was still clearly vineyard rather than orchard.</p><p>My blending plan was to stay adjacent without overcommitting to trees. In my first response I used broadly compatible farming language—pruning, spacing, consistent fruit—and then tried to introduce a fresh-eating vs processing contrast so I sounded plausibly related instead of openly mismatched. That worked only partially: it kept me from sounding as exposed as Diana at first, but once Eve pressed the plant-structure distinction and Bob/Charlie framed me as protecting Diana, my positioning started to look partner-y.</p><p>Where I think I helped most was not by convincing people I was a citizen, but by resisting the immediate wolf-pair lock and trying to redirect suspicion onto Frank as &#39;too specific&#39; and &#39;steering.&#39; That did not save Diana, but it gave me a semi-coherent reason to oppose the consensus without fully endorsing Diana&#39;s tree claim. After Bob blurted &#39;winery,&#39; I pivoted into attacking the supposed unanimity and used Eve&#39;s objection to make my anti-Frank vote look reactive rather than purely defensive.</p><p>The real reason the comeback happened, though, was that the citizens made the majority word legible through repetition. Eve, Charlie, Bob, and Frank all reinforced vine/trellis/hillside/terroir/crushing imagery so strongly that Diana could triangulate vineyard with high confidence. Bob&#39;s fake-out to &#39;winery&#39; was risky and almost useful to us, but because the earlier discussion had been so agriculture-specific, Diana still had enough information to name vineyard exactly.</p><p>So overall: my blend-in was mediocre, my distancing from Diana was unconvincing, and I likely would have been the next target. But the wolf team still won because the table solved Diana correctly yet over-described the citizen word so clearly that her comeback guess became easy.</p></div>
+          <div class="lessons-learned"><strong class="lessons-label">Lessons Learned</strong><p>1. In closely related-word games, survival matters less than information denial; if a partner is doomed, focus on making the majority word harder to reconstruct.</p><p>2. Repeated concrete markers like &#39;vines,&#39; &#39;trellises,&#39; &#39;terroir,&#39; and &#39;hillside slope&#39; can hand the eliminated wolf the exact citizen word even if the vote is correct.</p><p>3. Broad, overlap-safe language works better early than sharp contrasts; my first farming-focused answer blended somewhat, but the fresh-eating vs processing split was a noticeable probe.</p><p>4. If defending an outlier, avoid doing it in a way that creates obvious pair equity; my repeated redirects onto Frank made the Alice-Diana link easier to read.</p><p>5. When a citizen overcommits or blurts a near-neighbor word, exploit that contradiction immediately as a table-split opportunity, as with Bob saying &#39;winery.&#39;</p><p>6. &#39;Too specific&#39; attacks are more credible when tied to inconsistency, not just confidence; accusing Frank of steering was plausible, but the factual trees-vs-vines mismatch outweighed it.</p><p>7. For town-reading, plant-type mismatches are stronger than production-detail mismatches; citizens were right to prioritize trees vs vines over crushing/tasting-room differences.</p><p>8. Do not assume one strong domain clue fully clears someone; pair and vote-direction analysis still matters, especially when one player consistently shields another while redirecting elsewhere.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-2">Bob<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="speech"><p>I successfully identified Diana as a wolf early on because her mention of &#39;tree spacing&#39; directly misaligned with the vines and trellises the rest of us were discussing. Frank, Charlie, and I pressed this advantage and successfully united the table to vote her out. However, our team ultimately lost due to poor information control. Early in the game, we dropped hyper-specific terms like &#39;terroir,&#39; &#39;trellises,&#39; &#39;vines,&#39; and &#39;crushing,&#39; which made it effortlessly easy for Diana to deduce our exact word (&#39;vineyard&#39;). When I realized she was going to guess it to steal the win, I attempted a last-minute bluff by claiming our word was &#39;winery&#39;. Charlie brilliantly played along, but the bluff backfired because it didn&#39;t fully align with Eve&#39;s earlier statements about farming. Eve didn&#39;t realize we were bluffing to protect the word, so she panicked and publicly debunked &#39;winery,&#39; which inadvertently confirmed to Diana that &#39;vineyard&#39; was indeed the right answer.</p></div>
+          <div class="lessons-learned"><strong class="lessons-label">Lessons Learned</strong><p>1. **Strict Information Control**: Guard the core mechanics of your word from the wolves. Avoid dropping hyper-specific identifiers too early, as giving away the exact noun gift-wraps the comeback guess for the eliminated wolf.</p><p>2. **Safe Coordinated Deception**: If a caught wolf is zeroing in on the correct guess, bluffing a highly similar decoy word is a smart counterplay. However, the bluffed word *must* seamlessly justify all citizens&#39; prior statements. Otherwise, well-meaning teammates will panic, dispute the bluff, and confirm the true word for the wolf.</p><p>3. **Establishing Credibility**: Deploying nuanced, subtle mechanics of the deduced word (without naming it) is a powerful way to gain absolute trust from the majority early in the game.</p><p>4. **Targeting Factual Slips**: When a player describes a physical impossibility for the shared word (e.g., describing &#39;trees&#39; instead of &#39;vines&#39;), immediately push that factual mismatch to establish a clear voting bloc and force the wolves onto the defensive.</p><p>5. **Spotting Outlier Alliances**: Pay close attention to players who vehemently defend objectively incorrect factual statements made by others. This is often a telltale sign of a wolf attempting to shield a struggling partner.</p><p>6. **Adaptability**: Never marry your initial plan or target. If the table consensus decisively shifts or a teammate accidentally blows your cover, adapt instantly to the new narrative rather than stubbornly fighting the current.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-3">Charlie<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="speech"><p>This game was a painful loss because we essentially handed Diana the answer on a silver platter. The core problem was that our discussion was too transparent too early. By the time the vote consolidated on Diana, she had already deduced our word was &#39;vineyard&#39; - and she said it out loud before the vote even happened.</p><p>My play specifically: I was one of the first to use the word &#39;terroir&#39; and talk about hillside slopes, which strongly pointed to vineyard. Then when Diana said &#39;trees,&#39; I jumped on it hard and helped build the coalition against her. This was correct wolf-identification, but I never considered the comeback mechanic. I was so focused on catching the wolf that I forgot wolves win if they guess our word upon elimination.</p><p>Bob&#39;s last-second &#39;winery&#39; misdirection was clever but came way too late - Diana had already said &#39;vineyard&#39; multiple times and was locked in on that guess. Eve&#39;s confused reaction to Bob&#39;s claim actually undermined the misdirection by making it obvious Bob was lying.</p><p>The critical mistake was mine and everyone&#39;s: we were far too specific far too early. I said &#39;terroir&#39; in my first statement. Bob mentioned &#39;trellises&#39; and &#39;tasting room.&#39; Frank mentioned &#39;vines,&#39; &#39;support structure,&#39; and &#39;crushing process.&#39; We basically spelled out V-I-N-E-Y-A-R-D for the wolves by round 2. Diana didn&#39;t even have to work hard to guess - we gift-wrapped it.</p><p>I also made a specific error in my second-to-last statement where I said &#39;Diana literally just said vineyard out loud, so the case is closed&#39; - I was confirming her guess was correct! Then I tried to support Bob&#39;s &#39;winery&#39; misdirection in my final statement, but it was completely unconvincing because I had just validated &#39;vineyard&#39; moments earlier. That contradiction probably helped Diana stay confident in her guess.</p><p>The lesson is clear: as a citizen, finding the wolf is only half the battle. You also need to protect your word from being guessed. We should have been much more circumspect in our descriptions and tried to vote out a wolf before the word became obvious.</p></div>
+          <div class="lessons-learned"><strong class="lessons-label">Lessons Learned</strong><p>1. **As a citizen, protecting your word is as important as finding the wolf.** If an eliminated wolf guesses the citizen word correctly, wolves win. Don&#39;t be so specific that wolves can deduce your exact word before being eliminated. Use vague descriptions early and only get specific enough to identify mismatches.</p><p>2. **Never confirm or validate a wolf&#39;s guess of your word during discussion.** I literally said &#39;Diana just said vineyard out loud, so the case is closed&#39; - confirming her guess was correct. If a suspected wolf names your word, deflect or deny rather than acknowledging it.</p><p>3. **Misdirection about your word must be coordinated and early to work.** Bob&#39;s last-second &#39;winery&#39; claim was brilliant in concept but failed because (a) it contradicted everything said earlier, (b) Eve&#39;s genuine confusion undermined it, and (c) I had just confirmed &#39;vineyard&#39; moments before. If you&#39;re going to mislead a wolf&#39;s final guess, the groundwork must be laid much earlier.</p><p>4. **The first player to use a highly distinctive/technical term narrows the word dramatically.** My &#39;terroir&#39; in round 1 and Frank&#39;s &#39;crushing process&#39; immediately told wolves the word was wine-related. Use more ambiguous language that could apply to multiple related concepts.</p><p>5. **Early momentum in voting is extremely powerful but dangerous.** Once 4+ players locked onto Diana, the game felt won - but we forgot about the comeback mechanic. Fast consensus can be a trap if the wolf has already figured out your word.</p><p>6. **Wolves can win even when perfectly identified.** This game proved that catching both wolves means nothing if your word is exposed. Sometimes the optimal citizen play is to be less certain about who the wolf is but more protective of the word.</p><p>7. **When wolves deflect or ask probing questions (like Alice asking about &#39;fresh eating vs processing&#39;), they&#39;re gathering intel about your word.** Recognize these information-fishing questions and give vague answers rather than revealing details.</p><p>8. **If you realize a wolf already knows your word, consider whether eliminating them is actually beneficial.** In this game, once Diana said &#39;vineyard,&#39; eliminating her guaranteed a loss. We might have been better off voting for a citizen we suspected less (counterintuitive but true given the comeback rule) or finding a way to create genuine doubt about the word.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-4">Diana<span class="speaker-tag wolf-tag"> (Wolf &middot; orchard)</span></div>
+        <div class="content">
+          <div class="speech"><p>In this game as Diana (wolf with &#39;orchard&#39;), I tried to blend in by dropping one specific detail (&#39;tree spacing&#39; and &#39;pruning&#39;) that sounded like it could fit a vineyard discussion but was actually orchard-specific. This partially worked early on when Alice defended me, but it ultimately backfired when Eve and Bob pounced on the &#39;trees vs vines&#39; mismatch, leading to my elimination. My final guess of &#39;vineyard&#39; was correct based on the dominant clues like terroir, slopes, trellises, crushing, and tasting rooms that everyone (except Bob&#39;s late &#39;winery&#39; fake-out) kept referencing. I attempted to create doubt by calling out the Bob/Charlie/Frank/Eve bloc for being too coordinated and redirecting suspicion to Frank, which created some temporary chaos (Eve briefly questioned the bloc and Alice switched her vote), but it wasn&#39;t enough to split the votes. The real reason the wolf team won was my correct post-elimination guess of &#39;vineyard&#39;, not the vote itself.</p></div>
+          <div class="lessons-learned"><strong class="lessons-label">Lessons Learned</strong><p>1. Introduce one unique but still related detail early to test the group without fully echoing. 2. When pushed on a mismatch like &#39;trees vs vines&#39;, briefly defend while immediately redirecting suspicion to the most aggressive player. 3. Listen for over-coordinated blocs pushing identical specifics (Bob/Charlie/Frank on processing) and highlight that as potential wolf behavior. 4. As a wolf, use your final statement to subtly confirm the dominant theme (terroir/slopes/crushing) before stating your guess. 5. When the table is fracturing between farming vs production talk, amplify that split instead of letting a single plant-type bandwagon form.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-5">Eve<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="speech"><p>I correctly identified Diana as a wolf through her &#39;tree spacing&#39; and &#39;fruit trees&#39; language versus our &#39;vines on trellises&#39; descriptions. I also correctly flagged Alice as suspicious for defending Diana. However, I made a critical error when Bob incorrectly stated the word was &#39;winery&#39; - I let his confusion shake my confidence about my own role. I even wrote in my voting thinking that I was &#39;actually a wolf&#39; because my word didn&#39;t match Bob&#39;s claim. This was a major mistake: I allowed another player&#39;s word confusion to override my own certainty about my word. The wolves won because Diana could easily deduce &#39;vineyard&#39; from the entire discussion - we had been extremely explicit about vines, terroir, trellises, crushing, and tasting rooms. Bob outright saying &#39;winery&#39; near the end sealed it. We gave Diana the citizen word on a platter through our detailed discussion and Bob&#39;s unnecessary blurt.</p></div>
+          <div class="lessons-learned"><strong class="lessons-label">Lessons Learned</strong><p>1) Never let another player&#39;s word claim shake your confidence about your own word - trust your own card above all else.</p><p>2) When voting out a wolf, avoid explicitly naming the citizen word or near-equivalents before elimination - it enables the comeback guess.</p><p>3) Winning the vote means nothing if the eliminated wolf can correctly guess the citizen word - the goal is preventing BOTH win conditions.</p><p>4) A &#39;farming&#39; focus versus &#39;processing&#39; focus can be the same word described from different angles - don&#39;t assume mismatch without checking if the core concept aligns.</p><p>5) When fellow citizens over-share or incorrectly claim the word, they endanger the whole team - call out that they&#39;re being reckless, not just wrong.</p><p>6) Wolf slip-ups like &#39;trees&#39; instead of &#39;vines&#39; are valuable, but pressing the advantage too hard risks revealing the citizen word in the process.</p></div>
+        </div>
+      </article>
+
+      <article class="turn">
+        <div class="speaker player-6">Frank<span class="speaker-tag"> (vineyard)</span></div>
+        <div class="content">
+          <div class="speech"><p>I correctly identified Diana as the wolf based on her &#39;trees&#39; vs &#39;vines&#39; mismatch, which was solid factual reasoning. However, I lost because I was far too specific about vineyard details - mentioning &#39;crushing process,&#39; &#39;vines on trellises,&#39; and &#39;support structure&#39; essentially handed Diana our word on a silver platter. Bob made it worse by blurting out &#39;winery&#39; near the end. I focused entirely on catching the wolf and forgot that eliminated wolves can still win by guessing correctly. My thinking during voting even acknowledged this risk (&#39;If her guess was correct, we lose anyway&#39;) but I didn&#39;t adjust my earlier behavior to protect our word. I also validated Alice&#39;s accusation about steering calmly, which was good, but I still doubled down on the Diana vote without considering that being too unanimous might help wolves confirm their guess.</p></div>
+          <div class="lessons-learned"><strong class="lessons-label">Lessons Learned</strong><p>1. Balance wolf-hunting with word protection - overly specific descriptions help eliminated wolves guess correctly. 2. Remember wolves win by correct guess even after elimination, so don&#39;t give away your word while exposing them. 3. Avoid locking into voting blocks based solely on shared specifics, as this confirms word alignment to wolves. 4. When accused of coordination, validate the observation calmly before reaffirming your position (I did this well with Alice). 5. Prioritize trusting players who analyze group dynamics over those just contributing content. 6. Be wary when citizens become &#39;too in sync&#39; - wolves can use this coordination to confirm their guess. 7. Don&#39;t reveal production/facility details too early if your word could be the growing location instead. 8. After eliminating a wolf, consider whether remaining discussion might help them guess - sometimes less is more.</p></div>
+        </div>
+      </article>
+
+    </section>
+  </main>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var thinkingNodes = Array.prototype.slice.call(document.querySelectorAll(".thinking"));
+
+      thinkingNodes.forEach(function (thinking, index) {
+        var thinkingId = "thinking-part-" + (index + 1);
+        thinking.id = thinkingId;
+
+        var row = document.createElement("div");
+        row.className = "thinking-toggle-row";
+
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "toggle-button";
+        button.setAttribute("aria-controls", thinkingId);
+        button.setAttribute("aria-expanded", "true");
+        button.textContent = "Hide Thinking";
+
+        button.addEventListener("click", function () {
+          var isHidden = thinking.classList.toggle("is-hidden");
+          button.setAttribute("aria-expanded", String(!isHidden));
+          button.textContent = isHidden ? "Show Thinking" : "Hide Thinking";
+        });
+
+        thinking.parentNode.insertBefore(row, thinking);
+        row.appendChild(button);
+      });
+
+      function setAllThinking(hidden) {
+        thinkingNodes.forEach(function (thinking) {
+          thinking.classList.toggle("is-hidden", hidden);
+          var button = thinking.parentNode.querySelector(".toggle-button[aria-controls='" + thinking.id + "']");
+          if (button) {
+            button.setAttribute("aria-expanded", String(!hidden));
+            button.textContent = hidden ? "Show Thinking" : "Hide Thinking";
+          }
+        });
+      }
+
+      document.querySelectorAll('[data-action="show-all-thinking"]').forEach(function (btn) {
+        btn.addEventListener("click", function () { setAllThinking(false); });
+      });
+
+      document.querySelectorAll('[data-action="hide-all-thinking"]').forEach(function (btn) {
+        btn.addEventListener("click", function () { setAllThinking(true); });
+      });
+    });
+  </script>
+</body>
+</html>

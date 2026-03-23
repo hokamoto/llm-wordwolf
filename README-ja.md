@@ -170,6 +170,10 @@ uv run python web_app.py
 
 Webブラウザで `http://localhost:5000` を開いてください。Web UIではAIのプレイを観戦したり、人間プレイヤーとして参加したりできます。単語ペアはゲームごとにLLMによって生成されます。
 
+### 対戦リプレイ
+
+対戦の様子の例は[`examples/wordwolf_replay_ja.html`](./examples/wordwolf_replay_ja.html)で確認できます。
+
 ## マルチモデル実験
 
 `--models`で各プレイヤーに異なるLLMモデルを割り当てることができます。`--wolf-indices`、`--word-pair-index`、`--seed`と組み合わせることで、社会的推理におけるモデルの能力を比較する完全に制御された実験が可能です。
