@@ -1,5 +1,7 @@
 # Word Wolf — LLM Multi-Agent Game
 
+[日本語](./README-ja.md)
+
 An experimental project where LLM agents play **Word Wolf**, a social deduction game similar to Werewolf. By default all gameplay is driven by LLMs, but you can join the game yourself.
 
 ## What is Word Wolf?
