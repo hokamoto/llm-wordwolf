@@ -58,7 +58,7 @@ uv run python main.py [options]
 | `--rounds N` | `2` | 議論ラウンド数 |
 | `--games N` | `1` | 連続実行するゲーム数 (CLIのみ) |
 | `--lang LANG` | English | 議論の言語 (例：`Japanese`、`French`) |
-| `--models m1,m2,...` |  (デフォルトクライアント) | カンマ区切りのOpenRouterモデルID。プレイヤーごとに指定するか、全プレイヤーに同一モデルを指定 |
+| `--models m1,m2,...` |  (デフォルトクライアント) | カンマ区切りの[OpenRouterモデルID](https://openrouter.ai/models?fmt=cards&input_modalities=text&output_modalities=text)。プレイヤーごとに指定するか、全プレイヤーに同一モデルを指定 |
 | `--reflection` | オフ | ゲーム後の振り返りフェーズを実行 (各エージェントが自分のプレイを振り返る) |
 | `--human` | オフ | 人間プレイヤーとしてゲームに参加 (`--wolf-indices`と同時使用不可) |
 | `--html` | オフ | HTMLリプレイ出力を保存 |

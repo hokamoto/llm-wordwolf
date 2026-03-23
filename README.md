@@ -58,7 +58,7 @@ uv run python main.py [options]
 | `--rounds N` | `2` | Number of discussion rounds |
 | `--games N` | `1` | Number of games to run in sequence (CLI only) |
 | `--lang LANG` | English | Language for discussion (e.g. `Japanese`, `French`) |
-| `--models m1,m2,...` | (default client) | Comma-separated OpenRouter model IDs; one per player, or a single model for all players |
+| `--models m1,m2,...` | (default client) | Comma-separated [OpenRouter model IDs](https://openrouter.ai/models?fmt=cards&input_modalities=text&output_modalities=text); one per player, or a single model for all players |
 | `--reflection` | off | Run post-game reflection phase (each agent reflects on their play) |
 | `--human` | off | Join the game as a human player (cannot be used with `--wolf-indices`) |
 | `--html` | off | Save HTML replay output |
