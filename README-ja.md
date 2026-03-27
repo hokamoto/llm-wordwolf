@@ -220,6 +220,10 @@ cd src
 uv run baml-cli generate
 ```
 
+## 開発経緯
+
+[6つのLLMが推理劇をしたならば](https://www.fab34.com/ja/six-llms-walk-into-a-detective-play/)
+
 ## クレジット
 
 ワードウルフは**川崎晋氏**によってデザインされました。本実験プログラムは氏の作品にインスパイアされています。

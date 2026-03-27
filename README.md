@@ -221,6 +221,10 @@ cd src
 uv run baml-cli generate
 ```
 
+## Background
+
+Read about the development story behind this project: [Six LLMs Walk Into a Detective Play](https://www.fab34.com/en/six-llms-walk-into-a-detective-play/)
+
 ## Credits
 
 Word Wolf was designed by **Susumu Kawasaki**. This experimental program was inspired by his work.
