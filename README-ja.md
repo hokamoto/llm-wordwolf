@@ -136,10 +136,10 @@ uv run python main.py --human --players 5
 uv run python main.py --players 6 --wolves 2 --rounds 3
 
 # 日本語でプレイしてHTMLリプレイを保存
-uv run python main.py --players5--lang Japanese --html
+uv run python main.py --players 5 --lang Japanese --html
 
 # リフレクション付きマルチゲーム実行と集約 JSON
-uv run python main.py --games5--reflection --json --html
+uv run python main.py --games 5 --reflection --json --html
 
 # 前回の実行をさらに3ゲーム継続
 uv run python main.py --continue ../replay/wordwolf_replay_20250101_120000.json --games 3
